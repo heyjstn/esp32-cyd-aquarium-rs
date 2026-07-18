@@ -1,0 +1,11 @@
+# ESP-IDF configuration for the CYD aquarium firmware.
+
+# The aquarium scene graph (fish bodies, tentacles, JSON state) needs a
+# larger-than-default main task stack.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=20000
+
+# 1 ms tick so frame pacing and touch debouncing behave like the Arduino build.
+CONFIG_FREERTOS_HZ=1000
+
+# Run the chip at full speed for smooth 30 fps rendering.
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y

@@ -1,0 +1,10 @@
+# Copy this file to cfg.toml and fill in your own values.
+# cfg.toml is ignored by git on purpose: it can contain your Wi-Fi password.
+# Leaving wifi_ssid empty keeps the firmware offline (compile-time fallback clock).
+
+wifi_ssid = ""
+wifi_password = ""
+
+# POSIX timezone string. The default matches the original firmware
+# (US Central time with daylight saving rules).
+timezone = "CST6CDT,M3.2.0/2,M11.1.0/2"

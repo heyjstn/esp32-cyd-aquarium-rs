@@ -1,7 +1,7 @@
 //! Fish lifecycle: aging, health, reproduction, food chasing and the
 //! body/motion pairing, ported from lib/Aquarium/Fish.h.
 
-use crate::body::{create_body, Body, Head, Tail, Fin};
+use crate::body::{create_body, Body, Fin, Head, Tail};
 use crate::color::CHsv;
 use crate::consts;
 use crate::layer::Layer;
@@ -76,11 +76,22 @@ impl Fish {
         }
 
         let min_x = margin_x;
-        let max_x = if width > margin_x { width - margin_x } else { width };
+        let max_x = if width > margin_x {
+            width - margin_x
+        } else {
+            width
+        };
         let min_y = margin_top;
-        let max_y = if height > margin_bottom { height - margin_bottom } else { height };
+        let max_y = if height > margin_bottom {
+            height - margin_bottom
+        } else {
+            height
+        };
 
-        Vec2::new(rng.range(min_x, max_x) as f32, rng.range(min_y, max_y) as f32)
+        Vec2::new(
+            rng.range(min_x, max_x) as f32,
+            rng.range(min_y, max_y) as f32,
+        )
     }
 
     fn make_motion(kind: &str, pos: Vec2, x_res: u8, y_res: u8, rng: &mut Rng) -> Motion {
@@ -97,9 +108,19 @@ impl Fish {
     /// Spawn a fish, either of a requested kind (curated boot population) or
     /// from the weighted random mix. Mirrors the C++ (matrix, pos, age,
     /// bodyType, health) constructor.
-    pub fn spawn(x_res: u8, y_res: u8, pos: Vec2, age: f32, kind: Option<&str>, rng: &mut Rng, now_ms: u64) -> Self {
+    pub fn spawn(
+        x_res: u8,
+        y_res: u8,
+        pos: Vec2,
+        age: f32,
+        kind: Option<&str>,
+        rng: &mut Rng,
+        now_ms: u64,
+    ) -> Self {
         let selected = match kind {
-            Some("Fish") | Some("Star") | Some("Turtle") | Some("Snake") | Some("Octopus") => kind.unwrap().to_string(),
+            Some("Fish") | Some("Star") | Some("Turtle") | Some("Snake") | Some("Octopus") => {
+                kind.unwrap().to_string()
+            }
             Some(_) | None => {
                 let weights: Vec<f32> = SPAWN_TABLE.iter().map(|(_, w)| *w).collect();
                 SPAWN_TABLE[rng.pick_weighted(&weights)].0.to_string()
@@ -128,7 +149,13 @@ impl Fish {
     }
 
     /// Restore a fish from a saved definition (state load path).
-    pub fn from_definition(def: &FishDefinition, x_res: u8, y_res: u8, rng: &mut Rng, now_ms: u64) -> Self {
+    pub fn from_definition(
+        def: &FishDefinition,
+        x_res: u8,
+        y_res: u8,
+        rng: &mut Rng,
+        now_ms: u64,
+    ) -> Self {
         let pos = Self::random_safe_position(x_res, y_res, rng);
 
         let mut body = if def.body_type == "Fish" {
@@ -160,7 +187,9 @@ impl Fish {
 
     pub fn definition(&self) -> FishDefinition {
         let (head, tail, fin) = match &self.body.shape {
-            crate::body::BodyShape::Fish { head, tail, fin, .. } => (head.name(), tail.name(), fin.name()),
+            crate::body::BodyShape::Fish {
+                head, tail, fin, ..
+            } => (head.name(), tail.name(), fin.name()),
             _ => ("none", "noTail", "none"),
         };
         FishDefinition {
@@ -204,12 +233,24 @@ impl Fish {
     }
 
     /// food_pos: current position of the chased food, if any and still valid.
-    pub fn update(&mut self, co2: i64, stay_inside: bool, now_ms: u64, food_pos: Option<Vec2>) -> FishUpdate {
+    pub fn update(
+        &mut self,
+        co2: i64,
+        stay_inside: bool,
+        now_ms: u64,
+        food_pos: Option<Vec2>,
+    ) -> FishUpdate {
         self.motion.update(self.age, co2, stay_inside, now_ms);
         self.pos = self.motion.position() / consts::PHYSICS_SCALE;
         self.update_age(co2, now_ms);
         self.update_health(co2);
-        self.body.update(self.pos, self.motion.velocity(), self.motion.angle(), self.age, self.health);
+        self.body.update(
+            self.pos,
+            self.motion.velocity(),
+            self.motion.angle(),
+            self.age,
+            self.health,
+        );
 
         let mut event = FishUpdate::Alive;
         if let Some(food_pos) = food_pos {
@@ -302,7 +343,15 @@ mod tests {
     #[test]
     fn definition_roundtrip_restores_kind_and_colors() {
         let mut r = rng();
-        let f = Fish::spawn(80, 106, Vec2::new(30.0, 40.0), 0.66, Some("Fish"), &mut r, 0);
+        let f = Fish::spawn(
+            80,
+            106,
+            Vec2::new(30.0, 40.0),
+            0.66,
+            Some("Fish"),
+            &mut r,
+            0,
+        );
         let def = f.definition();
         assert_eq!(def.body_type, "Fish");
         assert!(!def.colors.is_empty());
@@ -315,7 +364,15 @@ mod tests {
 
     #[test]
     fn health_regenerates_in_good_air() {
-        let mut f = Fish::spawn(80, 106, Vec2::new(30.0, 40.0), 0.5, Some("Fish"), &mut rng(), 0);
+        let mut f = Fish::spawn(
+            80,
+            106,
+            Vec2::new(30.0, 40.0),
+            0.5,
+            Some("Fish"),
+            &mut rng(),
+            0,
+        );
         f.health = 0.5;
         for i in 0..10 {
             f.update(420, true, 100 + i * 33, None);
@@ -325,7 +382,15 @@ mod tests {
 
     #[test]
     fn health_drops_in_bad_air() {
-        let mut f = Fish::spawn(80, 106, Vec2::new(30.0, 40.0), 0.5, Some("Fish"), &mut rng(), 0);
+        let mut f = Fish::spawn(
+            80,
+            106,
+            Vec2::new(30.0, 40.0),
+            0.5,
+            Some("Fish"),
+            &mut rng(),
+            0,
+        );
         for i in 0..4 {
             f.update(1500, true, 100 + i * 33, None);
         }
@@ -343,7 +408,11 @@ mod tests {
             // back to the egg stage instead of killing the fish.
             let mut f = Fish::spawn(80, 106, Vec2::new(30.0, 40.0), 0.9, Some("Fish"), &mut r, 0);
             f.update(420, true, 8 * 24 * 60 * 60 * 1000, None);
-            assert!(f.age() >= 0.0 && f.age() < 1.0, "age {} out of range", f.age());
+            assert!(
+                f.age() >= 0.0 && f.age() < 1.0,
+                "age {} out of range",
+                f.age()
+            );
             if f.age() < 0.9 {
                 wrapped = true; // age only grows, so a smaller age means a wrap
             }
@@ -353,7 +422,15 @@ mod tests {
 
     #[test]
     fn eats_food_within_one_pixel() {
-        let mut f = Fish::spawn(80, 106, Vec2::new(30.0, 40.0), 0.5, Some("Fish"), &mut rng(), 0);
+        let mut f = Fish::spawn(
+            80,
+            106,
+            Vec2::new(30.0, 40.0),
+            0.5,
+            Some("Fish"),
+            &mut rng(),
+            0,
+        );
         f.update(420, true, 100, None);
         let pos = f.position();
         f.set_food(7);

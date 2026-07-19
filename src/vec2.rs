@@ -61,7 +61,10 @@ impl Vec2 {
     }
 
     pub fn lerp(&self, end: Vec2, t: f32) -> Vec2 {
-        Vec2::new((1.0 - t) * self.x + t * end.x, (1.0 - t) * self.y + t * end.y)
+        Vec2::new(
+            (1.0 - t) * self.x + t * end.x,
+            (1.0 - t) * self.y + t * end.y,
+        )
     }
 }
 

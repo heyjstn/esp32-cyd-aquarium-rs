@@ -67,7 +67,12 @@ pub fn foreground_profile(mut color: CRgb) -> CRgb {
 
 /// Brightness/saturation/black-threshold profile applied per layer at
 /// composite time (applyDisplayProfile).
-pub fn apply_display_profile(color: CRgb, brightness: u8, saturation: u16, black_threshold: u8) -> CRgb {
+pub fn apply_display_profile(
+    color: CRgb,
+    brightness: u8,
+    saturation: u16,
+    black_threshold: u8,
+) -> CRgb {
     if color == CRgb::BLACK {
         return CRgb::BLACK;
     }
@@ -92,7 +97,13 @@ pub fn apply_display_profile(color: CRgb, brightness: u8, saturation: u16, black
 }
 
 /// Full CydMatrix packRgb565ForDisplay pipeline.
-pub fn pack_rgb565_for_display(r: u8, g: u8, b: u8, brightness_scale: u8, profile: ColorProfile) -> u16 {
+pub fn pack_rgb565_for_display(
+    r: u8,
+    g: u8,
+    b: u8,
+    brightness_scale: u8,
+    profile: ColorProfile,
+) -> u16 {
     let mut color = CRgb::new(
         scale_channel_by_brightness(r, brightness_scale),
         scale_channel_by_brightness(g, brightness_scale),
@@ -107,9 +118,21 @@ pub fn pack_rgb565_for_display(r: u8, g: u8, b: u8, brightness_scale: u8, profil
             color.b = apply_tone_curve(color.b, consts::FOREGROUND_TONE_CURVE_STRENGTH, 0);
         }
         ColorProfile::Background => {
-            color.r = apply_tone_curve(color.r, consts::BACKGROUND_TONE_CURVE_STRENGTH, consts::TONE_BLACK_THRESHOLD);
-            color.g = apply_tone_curve(color.g, consts::BACKGROUND_TONE_CURVE_STRENGTH, consts::TONE_BLACK_THRESHOLD);
-            color.b = apply_tone_curve(color.b, consts::BACKGROUND_TONE_CURVE_STRENGTH, consts::TONE_BLACK_THRESHOLD);
+            color.r = apply_tone_curve(
+                color.r,
+                consts::BACKGROUND_TONE_CURVE_STRENGTH,
+                consts::TONE_BLACK_THRESHOLD,
+            );
+            color.g = apply_tone_curve(
+                color.g,
+                consts::BACKGROUND_TONE_CURVE_STRENGTH,
+                consts::TONE_BLACK_THRESHOLD,
+            );
+            color.b = apply_tone_curve(
+                color.b,
+                consts::BACKGROUND_TONE_CURVE_STRENGTH,
+                consts::TONE_BLACK_THRESHOLD,
+            );
         }
     }
 
@@ -155,15 +178,30 @@ mod tests {
 
     #[test]
     fn display_profile_black_threshold_kills_dim_pixels() {
-        assert_eq!(apply_display_profile(CRgb::new(1, 1, 1), 200, 128, 2), CRgb::BLACK);
-        assert_eq!(apply_display_profile(CRgb::new(1, 1, 1), 200, 128, 0), CRgb::new(1, 1, 1));
-        assert_eq!(apply_display_profile(CRgb::new(4, 4, 4), 200, 128, 2), CRgb::new(3, 3, 3));
+        assert_eq!(
+            apply_display_profile(CRgb::new(1, 1, 1), 200, 128, 2),
+            CRgb::BLACK
+        );
+        assert_eq!(
+            apply_display_profile(CRgb::new(1, 1, 1), 200, 128, 0),
+            CRgb::new(1, 1, 1)
+        );
+        assert_eq!(
+            apply_display_profile(CRgb::new(4, 4, 4), 200, 128, 2),
+            CRgb::new(3, 3, 3)
+        );
     }
 
     #[test]
     fn pack_background_black_stays_black() {
-        assert_eq!(pack_rgb565_for_display(0, 0, 0, 255, ColorProfile::Background), 0);
-        assert_eq!(pack_rgb565_for_display(0, 0, 0, 255, ColorProfile::Foreground), 0);
+        assert_eq!(
+            pack_rgb565_for_display(0, 0, 0, 255, ColorProfile::Background),
+            0
+        );
+        assert_eq!(
+            pack_rgb565_for_display(0, 0, 0, 255, ColorProfile::Foreground),
+            0
+        );
     }
 
     #[test]

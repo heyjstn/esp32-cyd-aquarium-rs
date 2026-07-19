@@ -4,6 +4,16 @@
 
 use crate::consts;
 
+pub fn backlight_percent_to_duty(percent: u8, max_duty: u32, active_high: bool) -> u32 {
+    let percent = percent.min(100) as u32;
+    let on_duty = (percent * max_duty + 50) / 100;
+    if active_high {
+        on_duty
+    } else {
+        max_duty - on_duty
+    }
+}
+
 /// Map an averaged raw LDR reading to a backlight percentage.
 /// Raw values rise as the room gets darker on this board's LDR circuit.
 pub fn map_ambient_raw_to_backlight(raw: u16) -> u8 {
@@ -94,6 +104,15 @@ mod tests {
         assert_eq!(map_ambient_raw_to_backlight(10), 100);
         assert_eq!(map_ambient_raw_to_backlight(650), 38);
         assert_eq!(map_ambient_raw_to_backlight(4000), 38);
+    }
+
+    #[test]
+    fn pwm_duty_clamps_rounds_and_supports_active_low() {
+        assert_eq!(backlight_percent_to_duty(0, 255, true), 0);
+        assert_eq!(backlight_percent_to_duty(50, 255, true), 128);
+        assert_eq!(backlight_percent_to_duty(100, 255, true), 255);
+        assert_eq!(backlight_percent_to_duty(120, 255, true), 255);
+        assert_eq!(backlight_percent_to_duty(25, 100, false), 75);
     }
 
     #[test]

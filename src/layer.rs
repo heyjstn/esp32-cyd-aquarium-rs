@@ -118,7 +118,15 @@ impl Layer {
         self.fill_circle_helper(x0, y0, r, 3, 0, color);
     }
 
-    fn fill_circle_helper(&mut self, x0: i16, y0: i16, r: i16, corners: u8, delta: i16, color: CRgb) {
+    fn fill_circle_helper(
+        &mut self,
+        x0: i16,
+        y0: i16,
+        r: i16,
+        corners: u8,
+        delta: i16,
+        color: CRgb,
+    ) {
         let mut f = 1 - r;
         let mut dd_f_x = 1;
         let mut dd_f_y = -2 * r;
@@ -159,6 +167,7 @@ impl Layer {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn fill_triangle(
         &mut self,
         x0: i16,
@@ -243,7 +252,15 @@ impl Layer {
     }
 
     /// Row of filled circles forming a rotated ellipse (GFX drawCircleArray).
-    pub fn draw_circle_array(&mut self, x: i16, y: i16, rad: i16, length: i16, angle: f32, color: CRgb) {
+    pub fn draw_circle_array(
+        &mut self,
+        x: i16,
+        y: i16,
+        rad: i16,
+        length: i16,
+        angle: f32,
+        color: CRgb,
+    ) {
         let cos_angle = angle.cos();
         let sin_angle = angle.sin();
 

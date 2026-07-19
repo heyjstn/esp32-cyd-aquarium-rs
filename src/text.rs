@@ -71,7 +71,15 @@ pub fn pixel_text_width(text: &str, scale: u8, letter_spacing: u8) -> u16 {
 
 /// Draw pixel text into a layer. Colors are RGB565, matching the original
 /// firmware which fills the foreground layer with 565 colors.
-pub fn draw_pixel_text(layer: &mut Layer, text: &str, x: i16, y: i16, scale: u8, letter_spacing: u8, color565: u16) {
+pub fn draw_pixel_text(
+    layer: &mut Layer,
+    text: &str,
+    x: i16,
+    y: i16,
+    scale: u8,
+    letter_spacing: u8,
+    color565: u16,
+) {
     let mut cursor_x = x;
     for c in text.chars() {
         let glyph = glyph_for(c);
@@ -94,7 +102,17 @@ pub fn draw_pixel_text(layer: &mut Layer, text: &str, x: i16, y: i16, scale: u8,
     }
 }
 
-pub fn draw_centered_pixel_text(layer: &mut Layer, text: &str, center_x: i16, y: i16, scale: u8, letter_spacing: u8, color565: u16, shadow565: u16) {
+#[allow(clippy::too_many_arguments)]
+pub fn draw_centered_pixel_text(
+    layer: &mut Layer,
+    text: &str,
+    center_x: i16,
+    y: i16,
+    scale: u8,
+    letter_spacing: u8,
+    color565: u16,
+    shadow565: u16,
+) {
     let width = pixel_text_width(text, scale, letter_spacing) as i16;
     let x = center_x - width / 2;
     draw_pixel_text(layer, text, x + 1, y + 1, scale, letter_spacing, shadow565);
@@ -168,7 +186,7 @@ pub fn clock_texts(c: &Civil) -> ClockTexts {
     if hour12 == 0 {
         hour12 = 12;
     }
-    let colon = if c.second % 2 == 0 { ':' } else { ' ' };
+    let colon = if c.second.is_multiple_of(2) { ':' } else { ' ' };
 
     ClockTexts {
         time: format!("{}{}{:02}", hour12, colon, c.minute),
@@ -176,7 +194,9 @@ pub fn clock_texts(c: &Civil) -> ClockTexts {
         seconds: format!("{:02}", c.second),
         date: format!(
             "{} {:02} {}",
-            DAY_LABELS[c.weekday as usize], c.day, MONTH_LABELS[(c.month - 1) as usize]
+            DAY_LABELS[c.weekday as usize],
+            c.day,
+            MONTH_LABELS[(c.month - 1) as usize]
         ),
     }
 }
@@ -193,24 +213,79 @@ pub const CLOCK_DATE_BOTTOM_MARGIN: i16 = 8;
 
 /// Draw the full clock overlay into the foreground layer.
 /// Colors are RGB565 values (time/date/shadow), as in the C++ build.
-pub fn render_clock_overlay(layer: &mut Layer, civil: &Civil, time_color: u16, date_color: u16, shadow_color: u16) {
+pub fn render_clock_overlay(
+    layer: &mut Layer,
+    civil: &Civil,
+    time_color: u16,
+    date_color: u16,
+    shadow_color: u16,
+) {
     let texts = clock_texts(civil);
     let center_x = layer.width() / 2;
 
     let time_width = pixel_text_width(&texts.time, CLOCK_TIME_SCALE, CLOCK_TIME_SPACING) as i16;
-    let suffix_width = pixel_text_width(&texts.meridiem, CLOCK_SUFFIX_SCALE, CLOCK_SUFFIX_SPACING) as i16;
+    let suffix_width =
+        pixel_text_width(&texts.meridiem, CLOCK_SUFFIX_SCALE, CLOCK_SUFFIX_SPACING) as i16;
     let total_width = time_width + CLOCK_SUFFIX_GAP as i16 + suffix_width;
     let time_x = center_x - total_width / 2;
     let suffix_x = time_x + time_width + CLOCK_SUFFIX_GAP as i16;
     let time_y = CLOCK_TIME_Y;
     let seconds_y = time_y + CLOCK_SECONDS_OFFSET_Y;
 
-    draw_pixel_text(layer, &texts.time, time_x + 1, time_y + 1, CLOCK_TIME_SCALE, CLOCK_TIME_SPACING, shadow_color);
-    draw_pixel_text(layer, &texts.meridiem, suffix_x + 1, time_y + 1, CLOCK_SUFFIX_SCALE, CLOCK_SUFFIX_SPACING, shadow_color);
-    draw_pixel_text(layer, &texts.seconds, suffix_x + 1, seconds_y + 1, CLOCK_SUFFIX_SCALE, CLOCK_SUFFIX_SPACING, shadow_color);
-    draw_pixel_text(layer, &texts.time, time_x, time_y, CLOCK_TIME_SCALE, CLOCK_TIME_SPACING, time_color);
-    draw_pixel_text(layer, &texts.meridiem, suffix_x, time_y, CLOCK_SUFFIX_SCALE, CLOCK_SUFFIX_SPACING, time_color);
-    draw_pixel_text(layer, &texts.seconds, suffix_x, seconds_y, CLOCK_SUFFIX_SCALE, CLOCK_SUFFIX_SPACING, date_color);
+    draw_pixel_text(
+        layer,
+        &texts.time,
+        time_x + 1,
+        time_y + 1,
+        CLOCK_TIME_SCALE,
+        CLOCK_TIME_SPACING,
+        shadow_color,
+    );
+    draw_pixel_text(
+        layer,
+        &texts.meridiem,
+        suffix_x + 1,
+        time_y + 1,
+        CLOCK_SUFFIX_SCALE,
+        CLOCK_SUFFIX_SPACING,
+        shadow_color,
+    );
+    draw_pixel_text(
+        layer,
+        &texts.seconds,
+        suffix_x + 1,
+        seconds_y + 1,
+        CLOCK_SUFFIX_SCALE,
+        CLOCK_SUFFIX_SPACING,
+        shadow_color,
+    );
+    draw_pixel_text(
+        layer,
+        &texts.time,
+        time_x,
+        time_y,
+        CLOCK_TIME_SCALE,
+        CLOCK_TIME_SPACING,
+        time_color,
+    );
+    draw_pixel_text(
+        layer,
+        &texts.meridiem,
+        suffix_x,
+        time_y,
+        CLOCK_SUFFIX_SCALE,
+        CLOCK_SUFFIX_SPACING,
+        time_color,
+    );
+    draw_pixel_text(
+        layer,
+        &texts.seconds,
+        suffix_x,
+        seconds_y,
+        CLOCK_SUFFIX_SCALE,
+        CLOCK_SUFFIX_SPACING,
+        date_color,
+    );
     draw_centered_pixel_text(
         layer,
         &texts.date,
@@ -232,7 +307,15 @@ mod tests {
         let c = civil_from_epoch(0);
         assert_eq!(
             c,
-            Civil { year: 1970, month: 1, day: 1, hour: 0, minute: 0, second: 0, weekday: 4 }
+            Civil {
+                year: 1970,
+                month: 1,
+                day: 1,
+                hour: 0,
+                minute: 0,
+                second: 0,
+                weekday: 4
+            }
         );
     }
 
@@ -253,20 +336,36 @@ mod tests {
     fn negative_epoch() {
         // 1969-12-31 23:59:59 UTC, a Wednesday.
         let c = civil_from_epoch(-1);
-        assert_eq!((c.year, c.month, c.day, c.hour, c.minute, c.second), (1969, 12, 31, 23, 59, 59));
+        assert_eq!(
+            (c.year, c.month, c.day, c.hour, c.minute, c.second),
+            (1969, 12, 31, 23, 59, 59)
+        );
         assert_eq!(c.weekday, 3);
     }
 
     #[test]
     fn clock_texts_formats() {
-        let base = Civil { year: 2026, month: 7, day: 5, hour: 0, minute: 5, second: 0, weekday: 0 };
+        let base = Civil {
+            year: 2026,
+            month: 7,
+            day: 5,
+            hour: 0,
+            minute: 5,
+            second: 0,
+            weekday: 0,
+        };
         let t = clock_texts(&base);
         assert_eq!(t.time, "12:05");
         assert_eq!(t.meridiem, "AM");
         assert_eq!(t.seconds, "00");
         assert_eq!(t.date, "SUN 05 JUL");
 
-        let pm = clock_texts(&Civil { hour: 13, minute: 9, second: 3, ..base });
+        let pm = clock_texts(&Civil {
+            hour: 13,
+            minute: 9,
+            second: 3,
+            ..base
+        });
         assert_eq!(pm.time, "1 09"); // odd second: colon hidden
         assert_eq!(pm.meridiem, "PM");
 
@@ -292,11 +391,25 @@ mod tests {
     #[test]
     fn overlay_draws_pixels() {
         let mut layer = Layer::new(80, 106);
-        let c = Civil { year: 2026, month: 1, day: 2, hour: 9, minute: 8, second: 7, weekday: 5 };
+        let c = Civil {
+            year: 2026,
+            month: 1,
+            day: 2,
+            hour: 9,
+            minute: 8,
+            second: 7,
+            weekday: 5,
+        };
         render_clock_overlay(&mut layer, &c, 0xFFFF, 0x07E0, 0x0000);
-        let lit = (0..80).map(|x| layer.get(x, 3)).filter(|p| *p != crate::color::CRgb::BLACK).count();
+        let lit = (0..80)
+            .map(|x| layer.get(x, 3))
+            .filter(|p| *p != crate::color::CRgb::BLACK)
+            .count();
         assert!(lit > 4, "time row should contain lit pixels");
-        let date_row = (0..80).map(|x| layer.get(x, 98)).filter(|p| *p != crate::color::CRgb::BLACK).count();
+        let date_row = (0..80)
+            .map(|x| layer.get(x, 98))
+            .filter(|p| *p != crate::color::CRgb::BLACK)
+            .count();
         assert!(date_row > 4, "date row should contain lit pixels");
     }
 }

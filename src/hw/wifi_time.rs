@@ -175,7 +175,7 @@ fn clock_sync_thread(
 
     let mut first_sync_done = false;
     loop {
-        info!("clock ntp=start ssid=\"{ssid}\"");
+        info!("clock ntp=start");
         let connected = if wifi.is_connected().unwrap_or(false) {
             true
         } else {

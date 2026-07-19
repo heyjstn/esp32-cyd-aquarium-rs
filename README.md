@@ -55,7 +55,7 @@ The aquarium runs without Wi-Fi and uses the firmware build time as its fallback
 cp cfg.toml.example cfg.toml
 ```
 
-Edit `cfg.toml` with the SSID, password, and a POSIX timezone string. Leave the password empty for an open network; non-empty passwords use WPA2-Personal. The file is ignored by Git because it can contain secrets. After a successful sync, Wi-Fi is powered down and retried at the configured interval.
+Edit the values under `[esp32-cyd-aquarium-rs]` with the SSID, password, and a POSIX timezone string. Leave the password empty for an open network; non-empty passwords use WPA2-Personal. The file is ignored by Git because it can contain secrets. Cargo tracks it so changed credentials are embedded on the next firmware build. After a successful sync, Wi-Fi is powered down and retried at the configured interval.
 
 ## Build and test
 

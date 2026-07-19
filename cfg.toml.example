@@ -2,6 +2,7 @@
 # cfg.toml is ignored by git on purpose: it can contain your Wi-Fi password.
 # Leaving wifi_ssid empty keeps the firmware offline (compile-time fallback clock).
 
+[esp32-cyd-aquarium-rs]
 wifi_ssid = ""
 wifi_password = ""
 

@@ -22,6 +22,7 @@ fn main() {
     // has happened yet (mirrors the __DATE__/__TIME__ fallback in C++).
     let epoch = build_epoch();
     println!("cargo:rustc-env=CYD_BUILD_EPOCH={epoch}");
+    println!("cargo:rerun-if-changed=cfg.toml");
     println!("cargo:rerun-if-changed=src");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH");

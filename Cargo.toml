@@ -35,6 +35,9 @@ mipidsi = "0.10"
 [build-dependencies]
 embuild = { version = "0.33", features = ["espidf"] }
 
+[dev-dependencies]
+toml = "0.8"
+
 [profile.release]
 opt-level = "s"
 lto = true

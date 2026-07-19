@@ -73,7 +73,7 @@ pub mod pins {
     pub const LIGHT_SENSOR: i32 = 34;
 }
 
-pub const TFT_SPI_HZ: u32 = 40_000_000;
+pub const TFT_SPI_HZ: u32 = 55_000_000;
 pub const TFT_BACKLIGHT_ON_HIGH: bool = true;
 
 // Backlight LEDC PWM.
@@ -241,7 +241,6 @@ pub const NTP_SYNC_TIMEOUT_MS: u64 = 5000;
 pub const NTP_RESYNC_INTERVAL_MS: u64 = 21_600_000;
 pub const NTP_RETRY_INTERVAL_MS: u64 = 300_000;
 pub const WIFI_DISCONNECT_AFTER_NTP: bool = true;
-pub const NTP_SERVERS: [&str; 3] = ["pool.ntp.org", "time.nist.gov", "time.google.com"];
 
 // ---------------------------------------------------------------------------
 // Auto backlight (platformio.ini CYD_AUTO_BACKLIGHT_* flags)

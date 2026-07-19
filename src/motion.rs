@@ -120,9 +120,22 @@ pub struct Motion {
 
 impl Motion {
     /// pos/x_resolution/y_resolution are already in physics scale.
-    pub fn new(kind: MotionKind, pos: Vec2, x_resolution: f32, y_resolution: f32, rng: &mut Rng) -> Self {
-        let (max_speed, min_speed, max_force, sin_amplitude, sin_frequency, noise_amplitude, noise_frequency) =
-            kind.params();
+    pub fn new(
+        kind: MotionKind,
+        pos: Vec2,
+        x_resolution: f32,
+        y_resolution: f32,
+        rng: &mut Rng,
+    ) -> Self {
+        let (
+            max_speed,
+            min_speed,
+            max_force,
+            sin_amplitude,
+            sin_frequency,
+            noise_amplitude,
+            noise_frequency,
+        ) = kind.params();
 
         let mut vel;
         loop {
@@ -200,7 +213,13 @@ impl Motion {
         if desired_vel.mag() < self.min_speed as f32 {
             desired_vel.set_mag(self.min_speed as f32);
         }
-        let mut max_speed_co2 = arduino_map(co2, consts::CO2_BAD, consts::CO2_REALBAD, self.max_speed as i64, 0) as f32;
+        let mut max_speed_co2 = arduino_map(
+            co2,
+            consts::CO2_BAD,
+            consts::CO2_REALBAD,
+            self.max_speed as i64,
+            0,
+        ) as f32;
         if max_speed_co2 < 0.0 {
             max_speed_co2 = 0.0;
         } else if max_speed_co2 > self.max_speed as f32 {
@@ -222,10 +241,11 @@ impl Motion {
                 self.side_sine_motion(now_ms);
                 self.noise_motion();
             }
-            MotionKind::Star | MotionKind::Turtle | MotionKind::Octopus => {
+            MotionKind::Star | MotionKind::Turtle => {
                 self.front_sine_motion(now_ms);
                 self.noise_motion();
             }
+            MotionKind::Octopus => self.front_sine_motion(now_ms),
         }
     }
 
@@ -298,12 +318,24 @@ mod tests {
     const YR: f32 = 106.0 * consts::PHYSICS_SCALE;
 
     fn motion(kind: MotionKind) -> Motion {
-        Motion::new(kind, Vec2::new(XR / 2.0, YR / 2.0), XR, YR, &mut Rng::new(5))
+        Motion::new(
+            kind,
+            Vec2::new(XR / 2.0, YR / 2.0),
+            XR,
+            YR,
+            &mut Rng::new(5),
+        )
     }
 
     #[test]
     fn initial_velocity_above_min() {
-        for kind in [MotionKind::Fish, MotionKind::Star, MotionKind::Turtle, MotionKind::Snake, MotionKind::Octopus] {
+        for kind in [
+            MotionKind::Fish,
+            MotionKind::Star,
+            MotionKind::Turtle,
+            MotionKind::Snake,
+            MotionKind::Octopus,
+        ] {
             let m = motion(kind);
             assert!(m.velocity().mag() >= 5.0);
         }
@@ -338,6 +370,18 @@ mod tests {
     }
 
     #[test]
+    fn octopus_motion_uses_only_front_sine_force() {
+        let mut actual = motion(MotionKind::Octopus);
+        let mut expected = motion(MotionKind::Octopus);
+
+        actual.do_motion(1_234);
+        expected.front_sine_motion(1_234);
+
+        assert!((actual.acc.x - expected.acc.x).abs() < 1e-6);
+        assert!((actual.acc.y - expected.acc.y).abs() < 1e-6);
+    }
+
+    #[test]
     fn follow_food_pulls_toward_target() {
         let mut m = motion(MotionKind::Fish);
         let start = m.position();
@@ -347,7 +391,10 @@ mod tests {
             m.update(0.8, 420, true, 1000 + i * 33);
         }
         let after = m.position();
-        assert!(after.x > start.x, "fish should move toward food: {start:?} -> {after:?}");
+        assert!(
+            after.x > start.x,
+            "fish should move toward food: {start:?} -> {after:?}"
+        );
     }
 
     #[test]

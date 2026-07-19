@@ -1,6 +1,5 @@
 /target
 **/*.rs.bk
-Cargo.lock
 
 # Local secrets (Wi-Fi credentials, timezone)
 cfg.toml

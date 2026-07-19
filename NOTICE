@@ -1,0 +1,11 @@
+ESP32 CYD Aquarium
+
+This project is based on Livegrid OpenMatrix:
+
+https://github.com/livegrid/OpenMatrix
+
+OpenMatrix is licensed under the GNU Affero General Public License v3.0.
+This repository preserves that license and adapts the project for the
+ESP32-2432S028R / Cheap Yellow Display hardware.
+
+This is an independent adaptation and is not an official Livegrid project.

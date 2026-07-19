@@ -43,7 +43,10 @@ impl ColorPalette {
 
     pub fn from_hsv(colors: Vec<CHsv>) -> Self {
         let rgb = colors.iter().map(|c| hsv2rgb_rainbow(*c)).collect();
-        Self { colors_hsv: colors, colors: rgb }
+        Self {
+            colors_hsv: colors,
+            colors: rgb,
+        }
     }
 
     fn update_rgb(&mut self) {
@@ -56,7 +59,8 @@ impl ColorPalette {
         for hsv in &mut self.colors_hsv {
             let mut age_factor = 1.0f32;
             if age >= consts::AGE_ADULT {
-                age_factor = 1.0 - ((age - consts::AGE_ADULT) / (consts::AGE_DEAD - consts::AGE_ADULT)) * 0.5;
+                age_factor = 1.0
+                    - ((age - consts::AGE_ADULT) / (consts::AGE_DEAD - consts::AGE_ADULT)) * 0.5;
             }
             hsv.s = (115.0 * health) as u8;
             hsv.v = (255.0 * age_factor) as u8;
@@ -94,7 +98,10 @@ impl Head {
             0 => Head::Triangle,
             1 => Head::Frog,
             _ => Head::Needle {
-                nose_len_multiplier: rng.range(consts::FISH_NEEDLE_NOSE_LENGTH_MULTIPLIER.0, consts::FISH_NEEDLE_NOSE_LENGTH_MULTIPLIER.1),
+                nose_len_multiplier: rng.range(
+                    consts::FISH_NEEDLE_NOSE_LENGTH_MULTIPLIER.0,
+                    consts::FISH_NEEDLE_NOSE_LENGTH_MULTIPLIER.1,
+                ),
             },
         }
     }
@@ -104,7 +111,10 @@ impl Head {
             "TriangleHead" => Head::Triangle,
             "FrogHead" => Head::Frog,
             "NeedleHead" => Head::Needle {
-                nose_len_multiplier: rng.range(consts::FISH_NEEDLE_NOSE_LENGTH_MULTIPLIER.0, consts::FISH_NEEDLE_NOSE_LENGTH_MULTIPLIER.1),
+                nose_len_multiplier: rng.range(
+                    consts::FISH_NEEDLE_NOSE_LENGTH_MULTIPLIER.0,
+                    consts::FISH_NEEDLE_NOSE_LENGTH_MULTIPLIER.1,
+                ),
             },
             _ => Head::random(rng),
         }
@@ -134,7 +144,15 @@ impl Head {
                 let mut pt3 = Vec2::from_angle(angle + PI / 2.0);
                 pt3 *= size as f32 / 2.0;
                 pt3 += shifted;
-                layer.fill_triangle(pt1.x as i16, pt1.y as i16, pt2.x as i16, pt2.y as i16, pt3.x as i16, pt3.y as i16, color);
+                layer.fill_triangle(
+                    pt1.x as i16,
+                    pt1.y as i16,
+                    pt2.x as i16,
+                    pt2.y as i16,
+                    pt3.x as i16,
+                    pt3.y as i16,
+                    color,
+                );
             }
             Head::Frog => {
                 // FrogHead draws with channels rotated (b, g, r) in C++.
@@ -152,11 +170,19 @@ impl Head {
                 pt += position;
                 layer.fill_circle(pt.x as i16, pt.y as i16, (size / 2) as i16, swapped);
             }
-            Head::Needle { nose_len_multiplier } => {
+            Head::Needle {
+                nose_len_multiplier,
+            } => {
                 let mut pt1 = Vec2::from_angle(angle);
                 pt1 *= size as f32 * *nose_len_multiplier as f32;
                 pt1 += position;
-                layer.draw_line(pt1.x as i16, pt1.y as i16, position.x as i16, position.y as i16, color);
+                layer.draw_line(
+                    pt1.x as i16,
+                    pt1.y as i16,
+                    position.x as i16,
+                    position.y as i16,
+                    color,
+                );
             }
         }
     }
@@ -181,7 +207,9 @@ impl Tail {
             1 => Tail::Curvy,
             _ => {
                 let count = rng.range(5, 15) as usize;
-                Tail::Wavy { segment_positions: vec![Vec2::ZERO; count] }
+                Tail::Wavy {
+                    segment_positions: vec![Vec2::ZERO; count],
+                }
             }
         }
     }
@@ -193,7 +221,9 @@ impl Tail {
             "CurvyTail" => Tail::Curvy,
             "WavyTail" => {
                 let count = rng.range(5, 15) as usize;
-                Tail::Wavy { segment_positions: vec![Vec2::ZERO; count] }
+                Tail::Wavy {
+                    segment_positions: vec![Vec2::ZERO; count],
+                }
             }
             _ => Tail::random(rng),
         }
@@ -224,15 +254,38 @@ impl Tail {
                 pt1 += pos;
                 pt2 += pos;
                 pt3 += pos;
-                layer.fill_triangle(pt1.x as i16, pt1.y as i16, pt2.x as i16, pt2.y as i16, pt3.x as i16, pt3.y as i16, color);
+                layer.fill_triangle(
+                    pt1.x as i16,
+                    pt1.y as i16,
+                    pt2.x as i16,
+                    pt2.y as i16,
+                    pt3.x as i16,
+                    pt3.y as i16,
+                    color,
+                );
                 let mut pt3 = Vec2::from_angle(angle + PI / 2.0);
                 pt3.set_mag(-(size as f32) * 3.0);
                 pt3 -= heading3;
                 pt3 += pos;
-                layer.fill_triangle(pt1.x as i16, pt1.y as i16, pt2.x as i16, pt2.y as i16, pt3.x as i16, pt3.y as i16, color);
+                layer.fill_triangle(
+                    pt1.x as i16,
+                    pt1.y as i16,
+                    pt2.x as i16,
+                    pt2.y as i16,
+                    pt3.x as i16,
+                    pt3.y as i16,
+                    color,
+                );
             }
             Tail::Curvy => {
-                layer.draw_circle_array(pos.x as i16, pos.y as i16, (size / 3) as i16, (size as i16) * 3, angle + PI / 2.0, color);
+                layer.draw_circle_array(
+                    pos.x as i16,
+                    pos.y as i16,
+                    (size / 3) as i16,
+                    (size as i16) * 3,
+                    angle + PI / 2.0,
+                    color,
+                );
             }
             Tail::Wavy { segment_positions } => {
                 let len = segment_positions.len();
@@ -318,15 +371,38 @@ impl Fin {
                 pt3.set_mag(size as f32 * 2.0);
                 pt3 -= heading3;
                 pt3 += pos;
-                layer.fill_triangle(pt1.x as i16, pt1.y as i16, pt2.x as i16, pt2.y as i16, pt3.x as i16, pt3.y as i16, color);
+                layer.fill_triangle(
+                    pt1.x as i16,
+                    pt1.y as i16,
+                    pt2.x as i16,
+                    pt2.y as i16,
+                    pt3.x as i16,
+                    pt3.y as i16,
+                    color,
+                );
                 let mut pt3 = Vec2::from_angle(angle + PI / 2.0);
                 pt3.set_mag(-(size as f32) * 2.0);
                 pt3 -= heading3;
                 pt3 += pos;
-                layer.fill_triangle(pt1.x as i16, pt1.y as i16, pt2.x as i16, pt2.y as i16, pt3.x as i16, pt3.y as i16, color);
+                layer.fill_triangle(
+                    pt1.x as i16,
+                    pt1.y as i16,
+                    pt2.x as i16,
+                    pt2.y as i16,
+                    pt3.x as i16,
+                    pt3.y as i16,
+                    color,
+                );
             }
             Fin::Ellipse => {
-                layer.draw_circle_array(pos.x as i16, pos.y as i16, (size as i16) * 3, (size / 3) as i16, angle, color);
+                layer.draw_circle_array(
+                    pos.x as i16,
+                    pos.y as i16,
+                    (size as i16) * 3,
+                    (size / 3) as i16,
+                    angle,
+                    color,
+                );
             }
             Fin::Leg => {
                 let mut pt = Vec2::from_angle(angle + PI / 2.0);
@@ -432,7 +508,8 @@ impl Body {
         self.vel = vel;
         self.size = age;
         self.health = health;
-        self.palette.adjust_color_by_age_and_health(self.size, self.health);
+        self.palette
+            .adjust_color_by_age_and_health(self.size, self.health);
     }
 
     pub fn display_egg(&self, layer: &mut Layer) {
@@ -441,10 +518,25 @@ impl Body {
     }
 
     pub fn display(&mut self, layer: &mut Layer, now_ms: u64) {
-        let Body { shape, palette, pos, vel, angle, size, .. } = self;
+        let Body {
+            shape,
+            palette,
+            pos,
+            vel,
+            angle,
+            size,
+            ..
+        } = self;
         let (pos, vel, angle, size) = (*pos, *vel, *angle, *size);
         match shape {
-            BodyShape::Fish { segments, segment_positions, gap_between_segments, head, tail, fin } => {
+            BodyShape::Fish {
+                segments,
+                segment_positions,
+                gap_between_segments,
+                head,
+                tail,
+                fin,
+            } => {
                 let gap = *gap_between_segments;
 
                 let len = segments.len();
@@ -452,7 +544,17 @@ impl Body {
                     let vin = segment_positions[i];
                     let color = palette.colors[i.min(palette.colors.len() - 1)];
                     draw_fish_segment(
-                        layer, segments, segment_positions, gap, size, fin, tail, i + 1, vin, color, true,
+                        layer,
+                        segments,
+                        segment_positions,
+                        gap,
+                        size,
+                        fin,
+                        tail,
+                        i + 1,
+                        vin,
+                        color,
+                        true,
                     );
                 }
 
@@ -469,10 +571,27 @@ impl Body {
 
                 let color0 = palette.colors[0];
                 draw_fish_segment(
-                    layer, segments, segment_positions, gap, size, fin, tail, 0, pos, color0, false,
+                    layer,
+                    segments,
+                    segment_positions,
+                    gap,
+                    size,
+                    fin,
+                    tail,
+                    0,
+                    pos,
+                    color0,
+                    false,
                 );
             }
-            BodyShape::Star { length, rad, arms, nodes, star_angle, rotation_speed } => {
+            BodyShape::Star {
+                length,
+                rad,
+                arms,
+                nodes,
+                star_angle,
+                rotation_speed,
+            } => {
                 let velocity_magnitude = vel.mag().max(0.1);
                 *star_angle += velocity_magnitude * *rotation_speed;
                 *star_angle = star_angle.rem_euclid(TWO_PI);
@@ -487,7 +606,13 @@ impl Body {
                         arm_pt.set_mag(length as f32 * size);
                         let end_point = pos + arm_pt;
                         let c0 = palette.colors[0];
-                        layer.draw_line(pos.x as i16, pos.y as i16, end_point.x as i16, end_point.y as i16, c0);
+                        layer.draw_line(
+                            pos.x as i16,
+                            pos.y as i16,
+                            end_point.x as i16,
+                            end_point.y as i16,
+                            c0,
+                        );
                         let c1 = palette.colors[1];
                         layer.fill_circle(end_point.x as i16, end_point.y as i16, node_rad, c1);
                     }
@@ -519,9 +644,17 @@ impl Body {
             }
             BodyShape::Turtle { length, rad } => {
                 let rad2draw = ((*rad as f32 * size) as i32).max(1) as i16;
-                let length2draw = ((*length as f32 * (1.0 + vel.mag() / 20.0) * size) as i32).max(1) as i16;
+                let length2draw =
+                    ((*length as f32 * (1.0 + vel.mag() / 20.0) * size) as i32).max(1) as i16;
                 let c = palette.colors[0];
-                layer.draw_circle_array(pos.x as i16, pos.y as i16, rad2draw, length2draw, angle + PI / 2.0, c);
+                layer.draw_circle_array(
+                    pos.x as i16,
+                    pos.y as i16,
+                    rad2draw,
+                    length2draw,
+                    angle + PI / 2.0,
+                    c,
+                );
             }
             BodyShape::Snake { segment_positions } => {
                 let len = segment_positions.len();
@@ -538,11 +671,22 @@ impl Body {
                 let color0 = palette.colors[0];
                 chain_pixel(layer, segment_positions, 0, pos, color0);
             }
-            BodyShape::Octopus { rad, tentacle_length, tentacle_segments } => {
+            BodyShape::Octopus {
+                rad,
+                tentacle_length,
+                tentacle_segments,
+            } => {
                 let rad2draw = ((*rad as f32 * size / 4.0) as i32).max(1) as i16;
                 let length2draw = ((*rad as f32 * size / 2.0) as i32).max(1) as i16;
                 let c0 = palette.colors[0];
-                layer.draw_circle_array(pos.x as i16, pos.y as i16, rad2draw, length2draw, angle, c0);
+                layer.draw_circle_array(
+                    pos.x as i16,
+                    pos.y as i16,
+                    rad2draw,
+                    length2draw,
+                    angle,
+                    c0,
+                );
 
                 let num_tentacles = tentacle_segments.len();
                 for i in 0..num_tentacles {
@@ -605,11 +749,23 @@ fn draw_fish_segment(
     }
 
     if draw_extras && (i == 1 || i == 3) {
-        fin.display(layer, segment_positions[i], segment_angle, current_segment_size as u8, color);
+        fin.display(
+            layer,
+            segment_positions[i],
+            segment_angle,
+            current_segment_size as u8,
+            color,
+        );
     }
 
     if draw_extras && i == len - 1 {
-        tail.display(layer, segment_positions[i], segment_angle, (current_segment_size * 2.0) as u8, color);
+        tail.display(
+            layer,
+            segment_positions[i],
+            segment_angle,
+            (current_segment_size * 2.0) as u8,
+            color,
+        );
     } else {
         let p = segment_positions[i];
         layer.fill_circle(p.x as i16, p.y as i16, current_segment_size as i16, color);
@@ -636,8 +792,12 @@ fn draw_tentacle(
     let back_offset = Vec2::new(angle.cos(), angle.sin()) * (rad as f32 * size / 6.0);
     let back_center = body_pos - back_offset;
 
-    let tentacle_angle = angle + PI + (i as f32 - (num_tentacles - 1) as f32 / 2.0) * (spread_angle / (num_tentacles - 1) as f32);
-    let tentacle_start = back_center + Vec2::new(tentacle_angle.cos(), tentacle_angle.sin()) * (rad as f32 * size / 6.0);
+    let tentacle_angle = angle
+        + PI
+        + (i as f32 - (num_tentacles - 1) as f32 / 2.0)
+            * (spread_angle / (num_tentacles - 1) as f32);
+    let tentacle_start = back_center
+        + Vec2::new(tentacle_angle.cos(), tentacle_angle.sin()) * (rad as f32 * size / 6.0);
 
     let mut current = tentacle_start;
     let segment_length = (tentacle_length as f32 * size) / consts::OCTOPUS_TENTACLE_SEGMENTS as f32;
@@ -649,7 +809,8 @@ fn draw_tentacle(
         let dv = current - tentacle_segments[i][j];
         let mut segment_angle = dv.heading();
 
-        let movement_angle = (time * 2.0 + i as f32 * 0.5 + j as f32 * 0.3).sin() * 0.2 * velocity_factor;
+        let movement_angle =
+            (time * 2.0 + i as f32 * 0.5 + j as f32 * 0.3).sin() * 0.2 * velocity_factor;
         segment_angle += movement_angle;
 
         tentacle_segments[i][j].x = current.x - segment_angle.cos() * segment_length;
@@ -657,7 +818,13 @@ fn draw_tentacle(
 
         let segment_color = colors[(j + 1).min(colors.len() - 1)];
         let next = tentacle_segments[i][j];
-        layer.draw_line(current.x as i16, current.y as i16, next.x as i16, next.y as i16, segment_color);
+        layer.draw_line(
+            current.x as i16,
+            current.y as i16,
+            next.x as i16,
+            next.y as i16,
+            segment_color,
+        );
 
         current = next;
     }
@@ -676,7 +843,10 @@ pub fn create_body(kind: &str, rng: &mut Rng) -> Body {
                 arms: rng.range(consts::STAR_NUM_ARMS.0, consts::STAR_NUM_ARMS.1),
                 nodes: rng.range(0, 2) == 1,
                 star_angle: rng.rand_max(6) as f32,
-                rotation_speed: rng.range(consts::STAR_ROTATION_SPEED.0, consts::STAR_ROTATION_SPEED.1) as f32 / 1000.0,
+                rotation_speed: rng
+                    .range(consts::STAR_ROTATION_SPEED.0, consts::STAR_ROTATION_SPEED.1)
+                    as f32
+                    / 1000.0,
             };
             Body::new(shape, ColorPalette::new(3, false, rng))
         }
@@ -692,20 +862,35 @@ pub fn create_body(kind: &str, rng: &mut Rng) -> Body {
             Body::new(shape, ColorPalette::new(palette_size, false, rng))
         }
         "Snake" => {
-            let num_segments = rng.range(consts::SNAKE_NUM_SEGMENTS.0, consts::SNAKE_NUM_SEGMENTS.1) as usize;
-            let shape = BodyShape::Snake { segment_positions: vec![Vec2::ZERO; num_segments] };
+            let num_segments =
+                rng.range(consts::SNAKE_NUM_SEGMENTS.0, consts::SNAKE_NUM_SEGMENTS.1) as usize;
+            let shape = BodyShape::Snake {
+                segment_positions: vec![Vec2::ZERO; num_segments],
+            };
             Body::new(shape, ColorPalette::new(num_segments, false, rng))
         }
         "Octopus" => {
             let rad = rng.range(consts::OCTOPUS_SIZE.0, consts::OCTOPUS_SIZE.1);
-            let num_tentacles = rng.range(consts::OCTOPUS_MIN_TENTACLES, consts::OCTOPUS_MAX_TENTACLES + 1) as usize;
-            let tentacle_length = rng.range(consts::OCTOPUS_TENTACLE_LENGTH.0, consts::OCTOPUS_TENTACLE_LENGTH.1);
+            let num_tentacles = rng.range(
+                consts::OCTOPUS_MIN_TENTACLES,
+                consts::OCTOPUS_MAX_TENTACLES + 1,
+            ) as usize;
+            let tentacle_length = rng.range(
+                consts::OCTOPUS_TENTACLE_LENGTH.0,
+                consts::OCTOPUS_TENTACLE_LENGTH.1,
+            );
             let shape = BodyShape::Octopus {
                 rad,
                 tentacle_length,
-                tentacle_segments: vec![vec![Vec2::ZERO; consts::OCTOPUS_TENTACLE_SEGMENTS]; num_tentacles],
+                tentacle_segments: vec![
+                    vec![Vec2::ZERO; consts::OCTOPUS_TENTACLE_SEGMENTS];
+                    num_tentacles
+                ],
             };
-            Body::new(shape, ColorPalette::new(consts::OCTOPUS_TENTACLE_SEGMENTS + 1, false, rng))
+            Body::new(
+                shape,
+                ColorPalette::new(consts::OCTOPUS_TENTACLE_SEGMENTS + 1, false, rng),
+            )
         }
         _ => create_fish_body(rng),
     }
@@ -719,10 +904,19 @@ pub fn create_fish_body(rng: &mut Rng) -> Body {
 }
 
 pub fn create_fish_body_with_parts(rng: &mut Rng, head: Head, tail: Tail, fin: Fin) -> Body {
-    let num_segments = rng.range(consts::FISH_NUM_SEGMENTS.0, consts::FISH_NUM_SEGMENTS.1).max(2) as usize;
+    let num_segments = rng
+        .range(consts::FISH_NUM_SEGMENTS.0, consts::FISH_NUM_SEGMENTS.1)
+        .max(2) as usize;
     let base_size = consts::FISH_MIN_SEGMENT_SIZE;
-    let max_add_size = rng.range(consts::FISH_MAX_SEGMENT_ADD.0, consts::FISH_MAX_SEGMENT_ADD.1) as f32;
-    let gap = rng.range(consts::FISH_GAP_BETWEEN_SEGMENTS.0, consts::FISH_GAP_BETWEEN_SEGMENTS.1) as f32 / 100.0;
+    let max_add_size = rng.range(
+        consts::FISH_MAX_SEGMENT_ADD.0,
+        consts::FISH_MAX_SEGMENT_ADD.1,
+    ) as f32;
+    let gap = rng.range(
+        consts::FISH_GAP_BETWEEN_SEGMENTS.0,
+        consts::FISH_GAP_BETWEEN_SEGMENTS.1,
+    ) as f32
+        / 100.0;
 
     let mut segments = Vec::with_capacity(num_segments);
     for i in 0..num_segments {
@@ -809,7 +1003,13 @@ mod tests {
             let mut body = create_body(kind, &mut r);
             for frame in 0..4 {
                 layer.clear();
-                body.update(Vec2::new(40.0 + frame as f32, 50.0), Vec2::new(0.5, 0.1), 0.3, 0.8, 1.0);
+                body.update(
+                    Vec2::new(40.0 + frame as f32, 50.0),
+                    Vec2::new(0.5, 0.1),
+                    0.3,
+                    0.8,
+                    1.0,
+                );
                 body.display(&mut layer, frame * 33);
             }
         }

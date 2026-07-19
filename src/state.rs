@@ -45,7 +45,11 @@ impl From<&FishDefinition> for FishJson {
             colors: def
                 .colors
                 .iter()
-                .map(|c| ColorJson { h: c.h, s: c.s, v: c.v })
+                .map(|c| ColorJson {
+                    h: c.h,
+                    s: c.s,
+                    v: c.v,
+                })
                 .collect(),
         }
     }
@@ -76,7 +80,9 @@ pub fn fish_to_json(def: &FishDefinition) -> String {
 }
 
 pub fn fish_from_json(data: &str) -> Option<FishDefinition> {
-    serde_json::from_str::<FishJson>(data).ok().map(FishDefinition::from)
+    serde_json::from_str::<FishJson>(data)
+        .ok()
+        .map(FishDefinition::from)
 }
 
 #[cfg(test)]
@@ -107,8 +113,20 @@ mod tests {
     #[test]
     fn json_keys_match_cpp_layout() {
         let text = fish_to_json(&sample());
-        for key in ["age", "health", "bodyType", "headType", "tailType", "finType", "motionType", "colors"] {
-            assert!(text.contains(&format!("\"{key}\"")), "missing key {key}: {text}");
+        for key in [
+            "age",
+            "health",
+            "bodyType",
+            "headType",
+            "tailType",
+            "finType",
+            "motionType",
+            "colors",
+        ] {
+            assert!(
+                text.contains(&format!("\"{key}\"")),
+                "missing key {key}: {text}"
+            );
         }
         assert!(text.contains("\"h\":10"));
     }

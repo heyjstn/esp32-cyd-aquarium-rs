@@ -1,6 +1,9 @@
 //! Color types and conversions, ported from FastLED's pixeltypes/hsv2rgb/
 //! colorpalettes as bundled in GFX_Lite, plus TFT_eSPI's color565.
 
+#[cfg(any(target_os = "espidf", test))]
+use embedded_graphics_core::pixelcolor::{raw::RawU16, Rgb565};
+
 use crate::math8::{scale8, scale8_video};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -196,6 +199,11 @@ pub fn color565(r: u8, g: u8, b: u8) -> u16 {
     ((r as u16 & 0xF8) << 8) | ((g as u16 & 0xFC) << 3) | (b as u16 >> 3)
 }
 
+#[cfg(any(target_os = "espidf", test))]
+pub(crate) fn embedded_rgb565(color: u16) -> Rgb565 {
+    RawU16::new(color).into()
+}
+
 /// GFX_Layer's uint16_t -> CRGB expansion (drawPixel(int16, int16, uint16)).
 pub fn crgb_from_565(color: u16) -> CRgb {
     let r = ((((color >> 11) & 0x1F) * 527 + 23) >> 6) as u8;
@@ -212,6 +220,7 @@ pub fn luma8(r: u8, g: u8, b: u8) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use embedded_graphics_core::prelude::RawData;
 
     #[test]
     fn nscale8_scales_channels() {
@@ -224,7 +233,10 @@ mod tests {
 
     #[test]
     fn hsv_rainbow_primary_hues() {
-        assert_eq!(hsv2rgb_rainbow(CHsv::new(0, 255, 255)), CRgb::new(255, 0, 0));
+        assert_eq!(
+            hsv2rgb_rainbow(CHsv::new(0, 255, 255)),
+            CRgb::new(255, 0, 0)
+        );
         let green = hsv2rgb_rainbow(CHsv::new(96, 255, 255));
         assert_eq!(green, CRgb::new(0, 255, 0));
         let blue = hsv2rgb_rainbow(CHsv::new(160, 255, 255));
@@ -233,7 +245,10 @@ mod tests {
 
     #[test]
     fn hsv_rainbow_zero_saturation_is_white() {
-        assert_eq!(hsv2rgb_rainbow(CHsv::new(0, 0, 255)), CRgb::new(255, 255, 255));
+        assert_eq!(
+            hsv2rgb_rainbow(CHsv::new(0, 0, 255)),
+            CRgb::new(255, 255, 255)
+        );
     }
 
     #[test]
@@ -268,6 +283,12 @@ mod tests {
         assert_eq!(color565(0, 0, 255), 0x001F);
         assert_eq!(color565(255, 255, 255), 0xFFFF);
         assert_eq!(color565(0, 0, 0), 0x0000);
+    }
+
+    #[test]
+    fn embedded_rgb565_preserves_packed_bits() {
+        let raw: RawU16 = embedded_rgb565(0xF81F).into();
+        assert_eq!(raw.into_inner(), 0xF81F);
     }
 
     #[test]

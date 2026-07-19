@@ -61,7 +61,15 @@ impl Aquarium {
             let pos = self.safe_spawn_position(i, rng);
             let age = initial_creature_age(i, rng);
             let kind = curated_creature_type(i, rng);
-            self.fish.push(Fish::spawn(self.x_res, self.y_res, pos, age, Some(kind), rng, now_ms));
+            self.fish.push(Fish::spawn(
+                self.x_res,
+                self.y_res,
+                pos,
+                age,
+                Some(kind),
+                rng,
+                now_ms,
+            ));
         }
 
         for i in 0..consts::NUM_PLANTS {
@@ -78,7 +86,9 @@ impl Aquarium {
     pub fn load_fish(&mut self, defs: &[FishDefinition], now_ms: u64, rng: &mut Rng) {
         self.fish.clear();
         for def in defs {
-            self.fish.push(Fish::from_definition(def, self.x_res, self.y_res, rng, now_ms));
+            self.fish.push(Fish::from_definition(
+                def, self.x_res, self.y_res, rng, now_ms,
+            ));
         }
     }
 
@@ -91,7 +101,10 @@ impl Aquarium {
     }
 
     pub fn active_food_count(&self) -> u8 {
-        self.food.iter().filter(|f| !f.food.is_off_screen() && !f.food.is_eaten()).count() as u8
+        self.food
+            .iter()
+            .filter(|f| !f.food.is_off_screen() && !f.food.is_eaten())
+            .count() as u8
     }
 
     pub fn take_save_pending(&mut self) -> bool {
@@ -111,7 +124,9 @@ impl Aquarium {
     }
 
     fn handle_touch_input(&mut self, now_ms: u64, rng: &mut Rng) {
-        if self.touch_active && now_ms.wrapping_sub(self.last_food_ms) >= consts::TOUCH_FOOD_INTERVAL_MS {
+        if self.touch_active
+            && now_ms.wrapping_sub(self.last_food_ms) >= consts::TOUCH_FOOD_INTERVAL_MS
+        {
             self.add_food(None, rng);
             self.last_food_ms = now_ms;
         }
@@ -120,9 +135,17 @@ impl Aquarium {
     fn schedule_next_autonomous_food(&mut self, boot_window: bool, now_ms: u64, rng: &mut Rng) {
         self.last_autonomous_food_ms = now_ms;
         self.next_autonomous_food_delay = if boot_window {
-            random_delay_between(rng, consts::AUTONOMOUS_BOOT_MIN_MS, consts::AUTONOMOUS_BOOT_MAX_MS)
+            random_delay_between(
+                rng,
+                consts::AUTONOMOUS_BOOT_MIN_MS,
+                consts::AUTONOMOUS_BOOT_MAX_MS,
+            )
         } else {
-            random_delay_between(rng, consts::AUTONOMOUS_FOOD_MIN_MS, consts::AUTONOMOUS_FOOD_MAX_MS)
+            random_delay_between(
+                rng,
+                consts::AUTONOMOUS_FOOD_MIN_MS,
+                consts::AUTONOMOUS_FOOD_MAX_MS,
+            )
         };
     }
 
@@ -160,12 +183,18 @@ impl Aquarium {
 
         let id = self.next_food_id;
         self.next_food_id += 1;
-        self.food.push(FoodItem { id, food: Food::new(x) });
+        self.food.push(FoodItem {
+            id,
+            food: Food::new(x),
+        });
 
         let mut min_distance = f32::MAX;
         let mut closest: Option<usize> = None;
         for (i, fish) in self.fish.iter().enumerate() {
-            if fish.food_id().is_none() && fish.age() > consts::AGE_EGG && fish.age() < consts::AGE_SENIOR {
+            if fish.food_id().is_none()
+                && fish.age() > consts::AGE_EGG
+                && fish.age() < consts::AGE_SENIOR
+            {
                 let distance = fish.position().dist(Vec2::new(x, 0.0));
                 if distance < min_distance {
                     min_distance = distance;
@@ -197,7 +226,9 @@ impl Aquarium {
                 None => None,
             };
 
-            if let FishUpdate::AteFood(id) = fish.update(consts::DEFAULT_CO2_PPM, true, now_ms, food_pos) {
+            if let FishUpdate::AteFood(id) =
+                fish.update(consts::DEFAULT_CO2_PPM, true, now_ms, food_pos)
+            {
                 if let Some(item) = self.food.iter_mut().find(|item| item.id == id) {
                     item.food.eat();
                 }
@@ -230,11 +261,18 @@ impl Aquarium {
         });
     }
 
-    pub fn update(&mut self, now_ms: u64, rng: &mut Rng, foreground: &mut Layer, background: &mut Layer) {
+    pub fn update(
+        &mut self,
+        now_ms: u64,
+        rng: &mut Rng,
+        foreground: &mut Layer,
+        background: &mut Layer,
+    ) {
         self.handle_touch_input(now_ms, rng);
         self.handle_autonomous_life(now_ms, rng);
 
-        self.water.update(consts::DEFAULT_TEMPERATURE_C as i64, now_ms, background);
+        self.water
+            .update(consts::DEFAULT_TEMPERATURE_C as i64, now_ms, background);
         self.boids.update(consts::DEFAULT_CO2_PPM);
         self.boids.render(foreground);
         self.update_fish(now_ms, foreground, rng);
@@ -395,7 +433,10 @@ mod tests {
         for frame in 0..10 {
             aq.update(10_100 + frame * 33, &mut r, &mut fg, &mut bg);
         }
-        assert!(aq.active_food_count() >= 2, "held touch should keep feeding");
+        assert!(
+            aq.active_food_count() >= 2,
+            "held touch should keep feeding"
+        );
 
         aq.on_touch_released();
         let count = aq.active_food_count();
@@ -454,7 +495,11 @@ mod tests {
             aq.update(frame * 33, &mut r, &mut fg, &mut bg);
             fg.clear();
         }
-        assert!(aq.fish_count() > 8, "population should grow, got {}", aq.fish_count());
+        assert!(
+            aq.fish_count() > 8,
+            "population should grow, got {}",
+            aq.fish_count()
+        );
         assert!(aq.fish_count() <= 12);
     }
 }

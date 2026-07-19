@@ -69,11 +69,13 @@ impl Water {
         let end_row = (self.current_row + Self::ROWS_PER_UPDATE).min(self.height);
         for row in self.current_row..end_row {
             for col in 0..self.width {
-                let mut noise_factor = inoise8(col as u16 * Self::SCALE, row as u16 * Self::SCALE, z);
+                let mut noise_factor =
+                    inoise8(col as u16 * Self::SCALE, row as u16 * Self::SCALE, z);
                 if noise_factor < 96 {
                     noise_factor = 96;
                 }
-                self.update_buffer[row * self.width + col] = self.simplex_color.scaled(noise_factor);
+                self.update_buffer[row * self.width + col] =
+                    self.simplex_color.scaled(noise_factor);
             }
         }
 
@@ -118,7 +120,11 @@ impl Plants {
             phase_offsets.push(rng.range(0, 500) as f32 / 100.0);
         }
 
-        Self { pos, branches, phase_offsets }
+        Self {
+            pos,
+            branches,
+            phase_offsets,
+        }
     }
 
     fn build_node(start_vec: Vec2) -> Vec2 {
@@ -199,7 +205,11 @@ impl Food {
     const FALL_SPEED: f32 = 0.3;
 
     pub fn new(x: f32) -> Self {
-        Self { position: Vec2::new(x, 0.0), eaten: false, off_screen: false }
+        Self {
+            position: Vec2::new(x, 0.0),
+            eaten: false,
+            off_screen: false,
+        }
     }
 
     pub fn update(&mut self, y_res: u8) {
@@ -211,7 +221,11 @@ impl Food {
 
     pub fn display(&self, foreground: &mut Layer) {
         if !self.eaten {
-            foreground.draw_pixel(self.position.x as i16, self.position.y as i16, CRgb::new(255, 255, 0));
+            foreground.draw_pixel(
+                self.position.x as i16,
+                self.position.y as i16,
+                CRgb::new(255, 255, 0),
+            );
         }
     }
 
@@ -269,8 +283,8 @@ impl Boid {
 
     fn flock(&mut self, boids: &[Boid]) {
         let mut sep = self.separate(boids);
-        let mut ali = self.align(boids);
-        let mut coh = self.cohesion(boids);
+        let ali = self.align(boids);
+        let coh = self.cohesion(boids);
 
         sep *= 1.5;
 
@@ -401,6 +415,12 @@ pub struct BoidManager {
     groups: Vec<Vec<Boid>>,
 }
 
+impl Default for BoidManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BoidManager {
     pub fn new() -> Self {
         Self { groups: Vec::new() }
@@ -413,9 +433,18 @@ impl BoidManager {
                 let num_boids = rng.range(consts::NUM_BOIDS.0, consts::NUM_BOIDS.1);
                 (0..num_boids)
                     .map(|_| {
-                        let mut boid = Boid::new(rng.range(0, x_res as i32) as f32, rng.range(0, y_res as i32) as f32, limits, rng);
-                        boid.max_speed = rng.range(consts::BOID_MAX_SPEED.0, consts::BOID_MAX_SPEED.1) as f32 / 10.0;
-                        boid.max_force = rng.range(consts::BOID_MAX_FORCE.0, consts::BOID_MAX_FORCE.1) as f32 / 10.0;
+                        let mut boid = Boid::new(
+                            rng.range(0, x_res as i32) as f32,
+                            rng.range(0, y_res as i32) as f32,
+                            limits,
+                            rng,
+                        );
+                        boid.max_speed =
+                            rng.range(consts::BOID_MAX_SPEED.0, consts::BOID_MAX_SPEED.1) as f32
+                                / 10.0;
+                        boid.max_force =
+                            rng.range(consts::BOID_MAX_FORCE.0, consts::BOID_MAX_FORCE.1) as f32
+                                / 10.0;
                         boid
                     })
                     .collect()
@@ -424,7 +453,8 @@ impl BoidManager {
     }
 
     pub fn update(&mut self, co2: i64) {
-        let mut speed_multiplier = arduino_map(co2, consts::CO2_BAD, consts::CO2_REALBAD, 100, 0) as f32;
+        let mut speed_multiplier =
+            arduino_map(co2, consts::CO2_BAD, consts::CO2_REALBAD, 100, 0) as f32;
         speed_multiplier = constrain(speed_multiplier, 0.0, 100.0);
         speed_multiplier /= 100.0;
 
@@ -550,8 +580,16 @@ mod tests {
         }
         for group in &manager.groups {
             for boid in group {
-                assert!(boid.location.x >= 0.0 && boid.location.x < 80.0, "x={}", boid.location.x);
-                assert!(boid.location.y >= 0.0 && boid.location.y < 106.0, "y={}", boid.location.y);
+                assert!(
+                    boid.location.x >= 0.0 && boid.location.x < 80.0,
+                    "x={}",
+                    boid.location.x
+                );
+                assert!(
+                    boid.location.y >= 0.0 && boid.location.y < 106.0,
+                    "y={}",
+                    boid.location.y
+                );
             }
         }
     }

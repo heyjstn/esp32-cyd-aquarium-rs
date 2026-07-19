@@ -13,8 +13,17 @@ const UNSET: u16 = 0xFFFF;
 /// Display backend consumed by the renderer (implemented by the ESP-IDF
 /// display driver; tests use a recording sink).
 pub trait FrameSink {
-    fn fill_screen(&mut self, color: u16);
-    fn push_rect(&mut self, x: u16, y: u16, w: u16, h: u16, pixels: &[u16]);
+    type Error;
+
+    fn fill_screen(&mut self, color: u16) -> Result<(), Self::Error>;
+    fn push_rect(
+        &mut self,
+        x: u16,
+        y: u16,
+        w: u16,
+        h: u16,
+        pixels: &[u16],
+    ) -> Result<(), Self::Error>;
 }
 
 pub struct DotRenderer {
@@ -22,11 +31,16 @@ pub struct DotRenderer {
     prev_logical: Vec<u16>,
     /// Tile staging buffer (one strip of screen rows).
     tile: Vec<u16>,
-    max_tile_height: u16,
     tile_logical_y: i32,
     tile_y0: u16,
     tile_y1: u16,
     tile_dirty: bool,
+}
+
+impl Default for DotRenderer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DotRenderer {
@@ -35,7 +49,6 @@ impl DotRenderer {
         Self {
             prev_logical: vec![UNSET; consts::LOGICAL_WIDTH * consts::LOGICAL_HEIGHT],
             tile: vec![TFT_BLACK; consts::VIEWPORT_WIDTH as usize * max_tile_height as usize],
-            max_tile_height,
             tile_logical_y: -1,
             tile_y0: 0,
             tile_y1: 0,
@@ -45,38 +58,72 @@ impl DotRenderer {
 
     /// Composite foreground over background, render the dots and push dirty
     /// tiles to the sink. Clears the foreground layer, like the C++ version.
-    pub fn composite(&mut self, foreground: &mut Layer, background: &Layer, sink: &mut dyn FrameSink) {
+    pub fn composite<S: FrameSink>(
+        &mut self,
+        foreground: &mut Layer,
+        background: &Layer,
+        sink: &mut S,
+    ) -> Result<(), S::Error> {
+        let result = self.composite_inner(foreground, background, sink);
+        foreground.clear();
+        result
+    }
+
+    fn composite_inner<S: FrameSink>(
+        &mut self,
+        foreground: &Layer,
+        background: &Layer,
+        sink: &mut S,
+    ) -> Result<(), S::Error> {
         for y in 0..consts::LOGICAL_HEIGHT as i16 {
             for x in 0..consts::LOGICAL_WIDTH as i16 {
                 let fg_pixel = foreground.get(x, y);
                 let has_foreground = fg_pixel != TRANSPARENT;
-                let source = if has_foreground { fg_pixel } else { background.get(x, y) };
-                let corrected = if has_foreground {
-                    apply_display_profile(source, consts::FOREGROUND_BRIGHTNESS, consts::FOREGROUND_SATURATION, 0)
+                let source = if has_foreground {
+                    fg_pixel
                 } else {
-                    apply_display_profile(source, consts::BACKGROUND_BRIGHTNESS, 128, consts::BACKGROUND_BLACK_THRESHOLD)
+                    background.get(x, y)
+                };
+                let corrected = if has_foreground {
+                    apply_display_profile(
+                        source,
+                        consts::FOREGROUND_BRIGHTNESS,
+                        consts::FOREGROUND_SATURATION,
+                        0,
+                    )
+                } else {
+                    apply_display_profile(
+                        source,
+                        consts::BACKGROUND_BRIGHTNESS,
+                        128,
+                        consts::BACKGROUND_BLACK_THRESHOLD,
+                    )
                 };
                 let color = pack_rgb565_for_display(
                     corrected.r,
                     corrected.g,
                     corrected.b,
                     255,
-                    if has_foreground { ColorProfile::Foreground } else { ColorProfile::Background },
+                    if has_foreground {
+                        ColorProfile::Foreground
+                    } else {
+                        ColorProfile::Background
+                    },
                 );
-                self.write_scaled_logical_pixel(x as u16, y as u16, color, sink);
+                self.write_scaled_logical_pixel(x as u16, y as u16, color, sink)?;
             }
         }
 
-        foreground.clear();
-        self.flush(sink);
+        self.flush(sink)
     }
 
     /// Reset dirty tracking and clear the physical screen (CydMatrix
     /// clearScreen equivalent).
-    pub fn clear_screen(&mut self, sink: &mut dyn FrameSink) {
+    pub fn clear_screen<S: FrameSink>(&mut self, sink: &mut S) -> Result<(), S::Error> {
         self.prev_logical.fill(UNSET);
         self.tile_logical_y = -1;
-        sink.fill_screen(TFT_BLACK);
+        self.tile_dirty = false;
+        sink.fill_screen(TFT_BLACK)
     }
 
     fn reset_tile(&mut self, logical_y: u16) {
@@ -95,28 +142,42 @@ impl DotRenderer {
         self.tile[..consts::VIEWPORT_WIDTH as usize * row_height].fill(TFT_BLACK);
     }
 
-    fn flush(&mut self, sink: &mut dyn FrameSink) {
+    fn flush<S: FrameSink>(&mut self, sink: &mut S) -> Result<(), S::Error> {
         if self.tile_logical_y < 0 {
-            return;
+            return Ok(());
         }
         if self.tile_dirty {
             let row_height = self.tile_y1 - self.tile_y0;
             let len = consts::VIEWPORT_WIDTH as usize * row_height as usize;
-            sink.push_rect(consts::VIEWPORT_X, self.tile_y0, consts::VIEWPORT_WIDTH, row_height, &self.tile[..len]);
+            sink.push_rect(
+                consts::VIEWPORT_X,
+                self.tile_y0,
+                consts::VIEWPORT_WIDTH,
+                row_height,
+                &self.tile[..len],
+            )?;
         }
         self.tile_logical_y = -1;
+        self.tile_dirty = false;
+        Ok(())
     }
 
-    fn write_scaled_logical_pixel(&mut self, x: u16, y: u16, color: u16, sink: &mut dyn FrameSink) {
+    fn write_scaled_logical_pixel<S: FrameSink>(
+        &mut self,
+        x: u16,
+        y: u16,
+        color: u16,
+        sink: &mut S,
+    ) -> Result<(), S::Error> {
         if x as usize >= consts::LOGICAL_WIDTH || y as usize >= consts::LOGICAL_HEIGHT {
-            return;
+            return Ok(());
         }
 
         if self.tile_logical_y < 0
             || y < self.tile_logical_y as u16
             || y >= self.tile_logical_y as u16 + consts::TILE_LOGICAL_ROWS
         {
-            self.flush(sink);
+            self.flush(sink)?;
             self.reset_tile(y);
         }
 
@@ -140,7 +201,7 @@ impl DotRenderer {
 
         // Dot renderer: black pixels leave the (pre-cleared) tile untouched.
         if color == TFT_BLACK {
-            return;
+            return Ok(());
         }
 
         let width = if x1 > x0 { x1 - x0 } else { 1 };
@@ -155,7 +216,7 @@ impl DotRenderer {
             self.tile[cy * stride + cx] = color;
             self.tile[cy * stride + cx + 1] = color;
             self.tile[(cy + 1) * stride + cx] = color;
-            return;
+            return Ok(());
         }
 
         let min_dimension = width.min(height);
@@ -174,6 +235,7 @@ impl DotRenderer {
                 }
             }
         }
+        Ok(())
     }
 }
 
@@ -205,11 +267,22 @@ mod tests {
     }
 
     impl FrameSink for RecordingSink {
-        fn fill_screen(&mut self, color: u16) {
+        type Error = core::convert::Infallible;
+
+        fn fill_screen(&mut self, color: u16) -> Result<(), Self::Error> {
             self.fills.push(color);
+            Ok(())
         }
-        fn push_rect(&mut self, x: u16, y: u16, w: u16, h: u16, pixels: &[u16]) {
+        fn push_rect(
+            &mut self,
+            x: u16,
+            y: u16,
+            w: u16,
+            h: u16,
+            pixels: &[u16],
+        ) -> Result<(), Self::Error> {
             self.pushes.push((x, y, w, h, pixels.to_vec()));
+            Ok(())
         }
     }
 
@@ -226,7 +299,7 @@ mod tests {
         let mut fg = Layer::new(80, 106);
         let bg = solid_layer(CRgb::new(0, 100, 80));
 
-        renderer.composite(&mut fg, &bg, &mut sink);
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
 
         // 106 logical rows in tiles of 4 -> 27 tile pushes.
         assert_eq!(sink.pushes.len(), 27);
@@ -245,9 +318,13 @@ mod tests {
         let mut fg = Layer::new(80, 106);
         let bg = solid_layer(CRgb::new(0, 100, 80));
 
-        renderer.composite(&mut fg, &bg, &mut sink);
-        renderer.composite(&mut fg, &bg, &mut sink);
-        assert_eq!(sink.pushes.len(), 27, "second identical frame should be a no-op");
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
+        assert_eq!(
+            sink.pushes.len(),
+            27,
+            "second identical frame should be a no-op"
+        );
     }
 
     #[test]
@@ -257,12 +334,12 @@ mod tests {
         let mut fg = Layer::new(80, 106);
         let bg = solid_layer(CRgb::new(0, 100, 80));
 
-        renderer.composite(&mut fg, &bg, &mut sink);
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
         assert_eq!(sink.pushes.len(), 27);
 
         // Change one pixel in logical row 40 (tile 40..43, screen y 121..133).
         fg.draw_pixel(10, 40, CRgb::new(255, 0, 0));
-        renderer.composite(&mut fg, &bg, &mut sink);
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
 
         assert_eq!(sink.pushes.len(), 28);
         let (x, y, w, h, _) = sink.pushes[27];
@@ -279,7 +356,7 @@ mod tests {
         let bg = solid_layer(CRgb::new(0, 100, 80));
         fg.draw_pixel(0, 0, CRgb::new(255, 255, 0));
 
-        renderer.composite(&mut fg, &bg, &mut sink);
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
 
         // First tile contains the yellow pixel's dot (foreground profile)
         // on top of the uniform water background: exactly two colors.
@@ -287,7 +364,11 @@ mod tests {
         let mut distinct: Vec<u16> = tile.iter().copied().filter(|p| *p != 0).collect();
         distinct.sort_unstable();
         distinct.dedup();
-        assert_eq!(distinct.len(), 2, "expected water + foreground colors, got {distinct:?}");
+        assert_eq!(
+            distinct.len(),
+            2,
+            "expected water + foreground colors, got {distinct:?}"
+        );
     }
 
     #[test]
@@ -299,7 +380,7 @@ mod tests {
         let mut bg = Layer::new(80, 106);
         bg.draw_pixel(5, 5, CRgb::new(200, 200, 200));
 
-        renderer.composite(&mut fg, &bg, &mut sink);
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
 
         // Tile containing logical (5,5): rows 4..7 -> screen y 13..25.
         let tile_push = &sink.pushes[1];
@@ -317,7 +398,13 @@ mod tests {
         let base_y = (5 * 3 + 1) - tile_push.1 as usize; // screen y of logical row 5 minus tile origin
         let stride = 240;
         let center = (base_y + 1) * stride + base_x + 1;
-        let mut expected = vec![center - stride, center - 1, center, center + 1, center + stride];
+        let mut expected = vec![
+            center - stride,
+            center - 1,
+            center,
+            center + 1,
+            center + stride,
+        ];
         expected.sort();
         let mut lit_sorted = lit.clone();
         lit_sorted.sort();
@@ -331,10 +418,66 @@ mod tests {
         let mut fg = Layer::new(80, 106);
         let bg = solid_layer(CRgb::new(0, 100, 80));
 
-        renderer.composite(&mut fg, &bg, &mut sink);
-        renderer.clear_screen(&mut sink);
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
+        renderer.clear_screen(&mut sink).unwrap();
         assert_eq!(sink.fills, vec![0]);
-        renderer.composite(&mut fg, &bg, &mut sink);
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
         assert_eq!(sink.pushes.len(), 27 + 27);
+    }
+
+    #[derive(Default)]
+    struct FailingSink {
+        attempts: usize,
+        pushes: usize,
+        fail_next: bool,
+    }
+
+    impl FrameSink for FailingSink {
+        type Error = &'static str;
+
+        fn fill_screen(&mut self, _color: u16) -> Result<(), Self::Error> {
+            Ok(())
+        }
+
+        fn push_rect(
+            &mut self,
+            _x: u16,
+            _y: u16,
+            _w: u16,
+            _h: u16,
+            _pixels: &[u16],
+        ) -> Result<(), Self::Error> {
+            self.attempts += 1;
+            if self.fail_next {
+                self.fail_next = false;
+                return Err("transfer failed");
+            }
+
+            self.pushes += 1;
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn failed_transfer_is_reported_and_retried() {
+        let mut renderer = DotRenderer::new();
+        let mut sink = FailingSink {
+            fail_next: true,
+            ..Default::default()
+        };
+        let mut fg = Layer::new(80, 106);
+        let bg = solid_layer(CRgb::new(0, 100, 80));
+
+        assert_eq!(
+            renderer.composite(&mut fg, &bg, &mut sink),
+            Err("transfer failed")
+        );
+        assert_eq!((sink.attempts, sink.pushes), (1, 0));
+
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
+        assert_eq!((sink.attempts, sink.pushes), (28, 27));
+
+        renderer.composite(&mut fg, &bg, &mut sink).unwrap();
+        assert_eq!(sink.attempts, 28);
     }
 }

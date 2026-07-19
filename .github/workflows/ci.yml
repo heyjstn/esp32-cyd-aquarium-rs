@@ -18,9 +18,9 @@ jobs:
       - name: Check formatting
         run: cargo +stable fmt --all -- --check
       - name: Lint
-        run: cargo +stable clippy --all-targets -- -D warnings
+        run: cargo +stable clippy --target x86_64-unknown-linux-gnu --all-targets -- -D warnings
       - name: Test
-        run: cargo +stable test --all-targets
+        run: cargo +stable test --target x86_64-unknown-linux-gnu --all-targets
 
   firmware:
     runs-on: ubuntu-latest

@@ -62,8 +62,9 @@ Edit the values under `[esp32-cyd-aquarium-rs]` with the SSID, password, and a P
 Run all host-side unit tests and lints:
 
 ```sh
-cargo test --all-targets
-cargo clippy --all-targets -- -D warnings
+HOST_TARGET=$(rustc -vV | sed -n 's/^host: //p')
+cargo test --target "$HOST_TARGET" --all-targets
+cargo clippy --target "$HOST_TARGET" --all-targets -- -D warnings
 cargo fmt --all -- --check
 ```
 

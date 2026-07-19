@@ -628,6 +628,7 @@ dependencies = [
  "mipidsi",
  "serde",
  "serde_json",
+ "toml",
  "toml-cfg",
 ]
 

@@ -43,3 +43,22 @@ fn wifi_sync_does_not_log_credentials() {
         );
     }
 }
+
+#[test]
+fn hardware_drivers_do_not_use_removed_esp_idf_hal_045_api() {
+    for relative_path in ["src/hw/display.rs", "src/hw/light.rs", "src/hw/touch.rs"] {
+        let path = format!("{}/{relative_path}", env!("CARGO_MANIFEST_DIR"));
+        let source = fs::read_to_string(path).expect("hardware driver should be readable");
+
+        for removed_api in [
+            "esp_idf_hal::peripheral::Peripheral",
+            "impl Peripheral<P =",
+            "PinDriver<'static, Gpio",
+        ] {
+            assert!(
+                !source.contains(removed_api),
+                "{relative_path} still uses the removed esp-idf-hal 0.45 API: {removed_api}"
+            );
+        }
+    }
+}

@@ -4,11 +4,10 @@
 use anyhow::Result as AnyResult;
 use core::fmt::Debug;
 use embedded_graphics_core::pixelcolor::Rgb565;
-use esp_idf_hal::gpio::{Gpio13, Gpio14, Gpio15, Gpio2, Gpio21, Output, PinDriver};
+use esp_idf_hal::gpio::{AnyInputPin, Gpio13, Gpio14, Gpio15, Gpio2, Gpio21, Output, PinDriver};
 use esp_idf_hal::ledc::{
     config::TimerConfig, LedcDriver, LedcTimerDriver, Resolution, CHANNEL0, TIMER0,
 };
-use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_hal::spi::{config as spi_config, SpiDeviceDriver, SpiDriver, SpiDriverConfig, SPI2};
 use esp_idf_hal::units::FromValueType;
 use esp_idf_svc::sys::EspError;
@@ -27,7 +26,7 @@ use crate::renderer::FrameSink;
 /// device driver (avoids embedded-hal version bridging).
 struct EspSpiInterface {
     spi: SpiDeviceDriver<'static, SpiDriver<'static>>,
-    dc: PinDriver<'static, Gpio2, Output>,
+    dc: PinDriver<'static, Output>,
 }
 
 impl Interface for EspSpiInterface {
@@ -153,20 +152,20 @@ pub struct CydDisplay {
 impl CydDisplay {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        spi2: impl Peripheral<P = SPI2> + 'static,
-        sclk: impl Peripheral<P = Gpio14> + 'static,
-        sdo: impl Peripheral<P = Gpio13> + 'static,
-        cs: impl Peripheral<P = Gpio15> + 'static,
-        dc: impl Peripheral<P = Gpio2> + 'static,
-        timer: impl Peripheral<P = TIMER0> + 'static,
-        channel: impl Peripheral<P = CHANNEL0> + 'static,
-        backlight_pin: impl Peripheral<P = Gpio21> + 'static,
+        spi2: SPI2<'static>,
+        sclk: Gpio14<'static>,
+        sdo: Gpio13<'static>,
+        cs: Gpio15<'static>,
+        dc: Gpio2<'static>,
+        timer: TIMER0<'static>,
+        channel: CHANNEL0<'static>,
+        backlight_pin: Gpio21<'static>,
     ) -> AnyResult<Self> {
-        let spi_driver = SpiDriver::new::<SPI2>(
+        let spi_driver = SpiDriver::new(
             spi2,
             sclk,
             sdo,
-            Option::<esp_idf_hal::gpio::AnyIOPin>::None,
+            Option::<AnyInputPin<'static>>::None,
             &SpiDriverConfig::new(),
         )?;
         let spi_config = spi_config::Config::new()

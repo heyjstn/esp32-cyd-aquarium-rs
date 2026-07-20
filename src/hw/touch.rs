@@ -1,8 +1,7 @@
 //! XPT2046 resistive touch reader, bit-banged exactly like CydTouch.cpp.
 
 use anyhow::Result;
-use esp_idf_hal::gpio::{Gpio25, Gpio32, Gpio33, Gpio36, Gpio39, Input, Output, PinDriver};
-use esp_idf_hal::peripheral::Peripheral;
+use esp_idf_hal::gpio::{Gpio25, Gpio32, Gpio33, Gpio36, Gpio39, Input, Output, PinDriver, Pull};
 
 use crate::consts;
 use crate::touch::map_raw_axis;
@@ -19,28 +18,28 @@ pub struct TouchPoint {
 }
 
 pub struct CydTouch {
-    cs: PinDriver<'static, Gpio33, Output>,
-    sclk: PinDriver<'static, Gpio25, Output>,
-    mosi: PinDriver<'static, Gpio32, Output>,
-    miso: PinDriver<'static, Gpio39, Input>,
-    irq: PinDriver<'static, Gpio36, Input>,
+    cs: PinDriver<'static, Output>,
+    sclk: PinDriver<'static, Output>,
+    mosi: PinDriver<'static, Output>,
+    miso: PinDriver<'static, Input>,
+    irq: PinDriver<'static, Input>,
     point: TouchPoint,
     previous_pressed: bool,
 }
 
 impl CydTouch {
     pub fn new(
-        cs: impl Peripheral<P = Gpio33> + 'static,
-        sclk: impl Peripheral<P = Gpio25> + 'static,
-        mosi: impl Peripheral<P = Gpio32> + 'static,
-        miso: impl Peripheral<P = Gpio39> + 'static,
-        irq: impl Peripheral<P = Gpio36> + 'static,
+        cs: Gpio33<'static>,
+        sclk: Gpio25<'static>,
+        mosi: Gpio32<'static>,
+        miso: Gpio39<'static>,
+        irq: Gpio36<'static>,
     ) -> Result<Self> {
         let mut cs = PinDriver::output(cs)?;
         let mut sclk = PinDriver::output(sclk)?;
         let mut mosi = PinDriver::output(mosi)?;
-        let miso = PinDriver::input(miso)?;
-        let irq = PinDriver::input(irq)?;
+        let miso = PinDriver::input(miso, Pull::Floating)?;
+        let irq = PinDriver::input(irq, Pull::Floating)?;
 
         cs.set_high()?;
         sclk.set_low()?;

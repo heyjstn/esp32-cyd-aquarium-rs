@@ -115,7 +115,7 @@ fn system_time_is_ntp_valid() -> bool {
 /// Spawn the background clock-sync thread. It owns the modem and retries
 /// forever: connect -> SNTP -> disconnect -> sleep until resync.
 pub fn spawn_clock_sync(
-    modem: esp_idf_hal::modem::Modem,
+    modem: esp_idf_hal::modem::WifiModem<'static>,
     sysloop: esp_idf_svc::eventloop::EspSystemEventLoop,
     ssid: &'static str,
     password: &'static str,
@@ -130,7 +130,7 @@ pub fn spawn_clock_sync(
 }
 
 fn clock_sync_thread(
-    modem: esp_idf_hal::modem::Modem,
+    modem: esp_idf_hal::modem::WifiModem<'static>,
     sysloop: esp_idf_svc::eventloop::EspSystemEventLoop,
     ssid: &'static str,
     password: &'static str,

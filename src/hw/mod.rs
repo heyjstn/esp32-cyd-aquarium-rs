@@ -111,7 +111,7 @@ fn run_inner() -> Result<()> {
     let mut clock = wifi_time::Clock::new(millis());
 
     let (wifi_modem, bluetooth_modem) = peripherals.modem.split();
-    bluetooth::create_bluetooth_conn(bluetooth_modem);
+    bluetooth::create_bluetooth_conn(bluetooth_modem)?;
 
     if CONFIG.wifi_ssid.is_empty() {
         info!("clock ntp=skipped reason=no_wifi_credentials");

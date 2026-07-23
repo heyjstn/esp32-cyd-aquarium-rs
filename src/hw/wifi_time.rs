@@ -2,13 +2,15 @@
 //! by the overlay, mirroring main_cyd.cpp's clock state machine:
 //! boot fallback -> Wi-Fi connect -> SNTP -> disconnect -> periodic resync.
 
-use std::ffi::{c_char, c_int, c_long, CString};
-use std::sync::{Arc, Mutex};
-
-use log::{info, warn};
-
 use crate::consts;
+use crate::hw::led::{Color, LedMode};
 use crate::text::Civil;
+use anyhow::Context;
+use log::{error, info, warn};
+use std::ffi::{c_char, c_int, c_long, CString};
+use std::sync::mpsc::SyncSender;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 // newlib time functions (64-bit time_t on ESP-IDF 5.x).
 extern "C" {
@@ -116,6 +118,7 @@ fn system_time_is_ntp_valid() -> bool {
 /// forever: connect -> SNTP -> disconnect -> sleep until resync.
 pub fn spawn_clock_sync(
     modem: esp_idf_hal::modem::WifiModem<'static>,
+    led_sender: SyncSender<LedMode>,
     sysloop: esp_idf_svc::eventloop::EspSystemEventLoop,
     ssid: &'static str,
     password: &'static str,
@@ -125,12 +128,15 @@ pub fn spawn_clock_sync(
     std::thread::Builder::new()
         .name("clock-sync".into())
         .stack_size(8192)
-        .spawn(move || clock_sync_thread(modem, sysloop, ssid, password, timezone, shared))
+        .spawn(move || {
+            clock_sync_thread(modem, led_sender, sysloop, ssid, password, timezone, shared)
+        })
         .expect("failed to spawn clock-sync thread");
 }
 
 fn clock_sync_thread(
     modem: esp_idf_hal::modem::WifiModem<'static>,
+    led_sender: SyncSender<LedMode>,
     sysloop: esp_idf_svc::eventloop::EspSystemEventLoop,
     ssid: &'static str,
     password: &'static str,
@@ -176,6 +182,14 @@ fn clock_sync_thread(
     let mut first_sync_done = false;
     loop {
         info!("clock ntp=start");
+
+        led_sender
+            .send(LedMode::Blink {
+                color: Color::YELLOW,
+                interval: Duration::from_millis(200),
+            })
+            .unwrap();
+
         let connected = if wifi.is_connected().unwrap_or(false) {
             true
         } else {
@@ -227,6 +241,11 @@ fn clock_sync_thread(
             warn!("clock ntp=skipped reason=wifi_connect_failed");
             false
         };
+
+        if attempt_succeeded {
+            info!("attempt succeeded => change led mode to solid blue");
+            led_sender.send(LedMode::Solid(Color::BLUE)).unwrap();
+        }
 
         if consts::WIFI_DISCONNECT_AFTER_NTP {
             let _ = wifi.disconnect();

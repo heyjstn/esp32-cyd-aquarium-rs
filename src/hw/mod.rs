@@ -3,19 +3,22 @@
 
 pub mod bluetooth;
 pub mod display;
+mod led;
 pub mod light;
 pub mod store;
 pub mod touch;
 pub mod wifi_time;
 
 use anyhow::Result;
-use esp_idf_hal::gpio::PinDriver;
 use log::{info, warn};
+use std::sync::mpsc;
+use std::thread;
 
 use crate::aquarium::Aquarium;
 use crate::backlight::AmbientBacklight;
 use crate::color::color565;
 use crate::consts;
+use crate::hw::led::{Color, LedMode};
 use crate::layer::Layer;
 use crate::renderer::DotRenderer;
 use crate::rng::Rng;
@@ -78,13 +81,20 @@ fn run_inner() -> Result<()> {
         peripherals.pins.gpio21,
     )?;
 
-    let mut red = PinDriver::output(peripherals.pins.gpio4)?;
-    let mut green = PinDriver::output(peripherals.pins.gpio16)?;
-    let mut blue = PinDriver::output(peripherals.pins.gpio17)?;
+    let (led_sender, led_receiver) = mpsc::sync_channel(1);
 
-    red.set_high()?;
-    green.set_high()?;
-    blue.set_low()?;
+    // Led-render loop
+    thread::spawn(move || -> Result<()> {
+        let (red_pin, green_pin, blue_pin) = (
+            peripherals.pins.gpio4,
+            peripherals.pins.gpio16,
+            peripherals.pins.gpio17,
+        );
+        let mut led = led::new(red_pin, green_pin, blue_pin);
+        led.run(led_receiver)
+    });
+
+    let _ = led_sender.clone().send(LedMode::Solid(Color::RED));
 
     // Ambient light sensor + initial backlight level.
     let mut light = light::LightSensor::new(peripherals.adc1, peripherals.pins.gpio34)?;
@@ -118,6 +128,7 @@ fn run_inner() -> Result<()> {
     } else {
         wifi_time::spawn_clock_sync(
             wifi_modem,
+            led_sender.clone(),
             sysloop.clone(),
             CONFIG.wifi_ssid,
             CONFIG.wifi_password,

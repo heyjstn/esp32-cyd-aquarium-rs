@@ -26,10 +26,11 @@ anyhow = "1"
 log = "0.4"
 toml-cfg = "0.2"
 embedded-hal = "1"
-embedded-svc = "0.28"
-esp-idf-sys = { version = "0.36", features = ["binstart"] }
-esp-idf-hal = "0.45"
-esp-idf-svc = "0.51"
+embedded-svc = "0.29.0"
+esp-idf-sys = { version = "0.37.2", features = ["binstart"] }
+esp-idf-hal = "0.46.2"
+esp-idf-svc = "0.52.1"
+esp32-nimble = "0.12.0"
 mipidsi = "0.10"
 
 [build-dependencies]

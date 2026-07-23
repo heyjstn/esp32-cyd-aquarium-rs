@@ -237,7 +237,7 @@ pub const TOUCH_FOOD_INTERVAL_MS: u64 = 200;
 // ---------------------------------------------------------------------------
 
 pub const WIFI_CONNECT_TIMEOUT_MS: u64 = 8000;
-pub const NTP_SYNC_TIMEOUT_MS: u64 = 5000;
+pub const NTP_SYNC_TIMEOUT_MS: u64 = 10000;
 pub const NTP_RESYNC_INTERVAL_MS: u64 = 21_600_000;
 pub const NTP_RETRY_INTERVAL_MS: u64 = 300_000;
 pub const WIFI_DISCONNECT_AFTER_NTP: bool = true;

@@ -26,5 +26,5 @@ pub mod vec2;
 pub mod wifi;
 pub mod world;
 
-#[cfg(target_os = "espidf")]
+#[cfg(all(target_os = "espidf", feature = "hardware"))]
 pub mod hw;

@@ -62,3 +62,30 @@ fn hardware_drivers_do_not_use_removed_esp_idf_hal_045_api() {
         }
     }
 }
+
+#[test]
+fn animation_core_can_build_without_hardware_dependencies() {
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml");
+    let source = fs::read_to_string(path).expect("Cargo manifest should be readable");
+    let document: toml::Table = toml::from_str(&source).expect("Cargo manifest should be valid");
+    let features = document
+        .get("features")
+        .and_then(toml::Value::as_table)
+        .expect("Cargo features should be declared");
+    let hardware = features
+        .get("hardware")
+        .and_then(toml::Value::as_array)
+        .expect("hardware feature should list its dependencies");
+
+    let defaults = features
+        .get("default")
+        .and_then(toml::Value::as_array)
+        .expect("default features should be declared");
+    assert_eq!(defaults.len(), 1);
+    assert_eq!(defaults[0].as_str(), Some("hardware"));
+    assert!(hardware.iter().all(|dependency| {
+        dependency
+            .as_str()
+            .is_some_and(|dependency| dependency.starts_with("dep:"))
+    }));
+}

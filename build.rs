@@ -14,7 +14,9 @@ fn build_epoch() -> i64 {
 
 fn main() {
     // Only run ESP-IDF build glue when actually targeting the chip.
-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("espidf") {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("espidf")
+        && std::env::var_os("CARGO_FEATURE_HARDWARE").is_some()
+    {
         embuild::espidf::sysenv::output();
     }
 

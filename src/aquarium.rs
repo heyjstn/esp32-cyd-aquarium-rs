@@ -1,8 +1,6 @@
 //! Aquarium orchestration: population, feeding, world updates and periodic
 //! state saving, ported from lib/Aquarium/Aquarium.h (CYD build path).
 
-use std::collections::HashMap;
-
 use crate::consts;
 use crate::fish::{Fish, FishDefinition, FishUpdate};
 use crate::layer::Layer;
@@ -208,23 +206,17 @@ impl Aquarium {
     }
 
     fn update_fish(&mut self, now_ms: u64, foreground: &mut Layer, rng: &mut Rng) {
-        let food_positions: HashMap<u64, (Vec2, bool)> = self
-            .food
-            .iter()
-            .map(|item| (item.id, (item.food.position(), item.food.is_off_screen())))
-            .collect();
-
         for fish in &mut self.fish {
-            let food_pos = match fish.food_id() {
-                Some(id) => match food_positions.get(&id) {
-                    Some((pos, false)) => Some(*pos),
-                    _ => {
-                        fish.clear_food();
-                        None
-                    }
-                },
-                None => None,
-            };
+            let food_id = fish.food_id();
+            let food_pos = food_id.and_then(|id| {
+                self.food
+                    .iter()
+                    .find(|item| item.id == id && !item.food.is_off_screen())
+                    .map(|item| item.food.position())
+            });
+            if food_id.is_some() && food_pos.is_none() {
+                fish.clear_food();
+            }
 
             if let FishUpdate::AteFood(id) =
                 fish.update(consts::DEFAULT_CO2_PPM, true, now_ms, food_pos)

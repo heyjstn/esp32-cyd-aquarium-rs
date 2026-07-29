@@ -1,7 +1,7 @@
 use esp_idf_hal::gpio::{Output, OutputPin, PinDriver};
+use esp_idf_hal::ledc::LedcDriver;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::Duration;
-use esp_idf_hal::ledc::LedcDriver;
 
 /// Color is constructed by mixing of RGB
 ///

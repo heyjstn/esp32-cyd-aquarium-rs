@@ -27,13 +27,14 @@ hardware = [
     "dep:esp32-nimble",
     "dep:log",
     "dep:mipidsi",
+    "dep:serde_json",
     "dep:toml-cfg",
 ]
 
 [dependencies]
 embedded-graphics-core = "0.4"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", optional = true }
 
 # Hardware crates only build for the ESP-IDF target. They are target-gated so
 # that `cargo test` works on a regular host machine.

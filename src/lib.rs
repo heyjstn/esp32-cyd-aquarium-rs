@@ -18,6 +18,7 @@ pub mod noise;
 pub mod panel;
 pub mod renderer;
 pub mod rng;
+#[cfg(feature = "hardware")]
 pub mod state;
 pub mod text;
 pub mod tone;

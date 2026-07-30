@@ -18,6 +18,7 @@ pub mod noise;
 pub mod panel;
 pub mod renderer;
 pub mod rng;
+#[cfg(feature = "hardware")]
 pub mod state;
 pub mod text;
 pub mod tone;
@@ -26,5 +27,5 @@ pub mod vec2;
 pub mod wifi;
 pub mod world;
 
-#[cfg(target_os = "espidf")]
+#[cfg(all(target_os = "espidf", feature = "hardware"))]
 pub mod hw;
